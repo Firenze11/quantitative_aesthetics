@@ -1,2 +1,2 @@
 # quantitative_aesthetics
-repository for quantitative aesthetics class
+This is the repository for quantitative aesthetics class

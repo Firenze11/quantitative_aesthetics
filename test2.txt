@@ -1,5 +1,2 @@
-<<<<<<< HEAD
 TEST!
-=======
 aaaaaa
->>>>>>> b34d899f61910173fdbdeea8ba4a33eba46296a7

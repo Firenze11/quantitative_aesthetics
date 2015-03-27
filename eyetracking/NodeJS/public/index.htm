@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>TUTORIAL02</title>
+    <link rel="stylesheet" href="css/styles.css" type="text/css">
+    <script type="text/javascript" src="jquery.js"></script>
+    <script src="socket.io.js"></script>
+    
+    <script type="text/javascript" src="Main.js" ></script>    
+
+</head>
+<body onload="main()">
+
+        <div id="menuDiv">
+            <textarea id="imageLinkInput">
+                http://www.jackson-pollock.org/images/paintings/convergence.jpg
+            </textarea>
+            <button id="loadImageButton">load image</button>
+            <input id="pauseCheckBox" type="checkbox" checked="false">pause</input>
+            <div class="map">
+                <image id="heatMapImage" class="mapImage"></image>
+                <canvas width="256" height="256" id="heatMapCanvas" class="mapCanvas"></canvas>
+            </div>
+            <div class="map">
+                <image id="trackMapImage" class="mapImage"></image>
+                <canvas width="256" height="256" id="trackMapCanvas" class="mapCanvas"></canvas>
+            </div>
+        </div>
+        <div id="mainDiv">
+            <image id="trackImage" class="mapImage"></image>
+            <canvas id="trackCanvas"></canvas>
+        </div>    
+
+</body>
+</html>

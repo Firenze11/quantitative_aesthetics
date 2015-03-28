@@ -59,3 +59,6 @@ C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\eyetracking\EyeTrackTob
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\eyetracking\EyeTrackTobii\obj\x86\Debug\eyetrack.Properties.Resources.resources
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\eyetracking\EyeTrackTobii\obj\x86\Debug\eyetrack.csproj.GenerateResource.Cache
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\eyetracking\EyeTrackTobii\bin\Debug\Rhino3dmIO.dll
+C:\Users\lezhi\Projects\quantitative_aesthetics\eyetracking\EyeTrackTobii\bin\Debug\eyetrack.exe.config
+C:\Users\lezhi\Projects\quantitative_aesthetics\eyetracking\EyeTrackTobii\obj\x86\Debug\eyetrack.exe
+C:\Users\lezhi\Projects\quantitative_aesthetics\eyetracking\EyeTrackTobii\obj\x86\Debug\eyetrack.pdb

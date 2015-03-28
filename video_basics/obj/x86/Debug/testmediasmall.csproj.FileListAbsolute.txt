@@ -1,0 +1,27 @@
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\bin\Debug\testmediasmall.exe.config
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\bin\Debug\testmediasmall.exe
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\bin\Debug\testmediasmall.pdb
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\bin\Debug\C_sawapan_media.dll
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\bin\Debug\OpenNURBS.NET.dll
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\bin\Debug\OpenTK.dll
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\bin\Debug\OpenTK.GLControl.dll
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\bin\Debug\OpenTK.xml
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\bin\Debug\OpenTK.GLControl.xml
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\obj\x86\Debug\testmediasmall.MainWindowForm.resources
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\obj\x86\Debug\testmediasmall.Properties.Resources.resources
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\obj\x86\Debug\GenerateResource.read.1.tlog
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\obj\x86\Debug\GenerateResource.write.1.tlog
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\obj\x86\Debug\testmediasmall.exe
+C:\Users\pan\Google Drive\SYNCmain\GSD2012_1FALL\NumDes\2012_11_27_Workshop12_media\WorkshopProject\obj\x86\Debug\testmediasmall.pdb
+C:\Users\lezhi\Desktop\WorkshopProject\bin\Debug\testmediasmall.exe.config
+C:\Users\lezhi\Desktop\WorkshopProject\obj\x86\Debug\testmediasmall.exe
+C:\Users\lezhi\Desktop\WorkshopProject\obj\x86\Debug\testmediasmall.pdb
+C:\Users\lezhi\Desktop\WorkshopProject\bin\Debug\testmediasmall.exe
+C:\Users\lezhi\Desktop\WorkshopProject\bin\Debug\testmediasmall.pdb
+C:\Users\lezhi\Desktop\WorkshopProject\bin\Debug\OpenTK.xml
+C:\Users\lezhi\Desktop\WorkshopProject\bin\Debug\OpenTK.GLControl.xml
+C:\Users\lezhi\Desktop\WorkshopProject\obj\x86\Debug\testmediasmall.csprojResolveAssemblyReference.cache
+C:\Users\lezhi\Desktop\WorkshopProject\obj\x86\Debug\testmediasmall.MainWindowForm.resources
+C:\Users\lezhi\Desktop\WorkshopProject\obj\x86\Debug\testmediasmall.Properties.Resources.resources
+C:\Users\lezhi\Desktop\WorkshopProject\obj\x86\Debug\testmediasmall.csproj.GenerateResource.Cache

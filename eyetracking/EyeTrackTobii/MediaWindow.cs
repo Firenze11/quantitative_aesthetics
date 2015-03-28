@@ -18,10 +18,8 @@ using System.IO;
 
 namespace eyetrack
 {
-
     public class MediaWindow
     {
-
         //...........................eye
        // Socket socket;
         EyeHelper EyeTracker = new EyeHelperTOBII();
@@ -35,15 +33,14 @@ namespace eyetrack
         public int Height = 0;
         public double MouseX = 0.0;
         public double MouseY = 0.0;
-
         public GLutils.C_View Viewer = new GLutils.C_View();
-
 
         StreamWriter sw;
 
         public void Initialize(GLControl glcontrol)
         {
-            sw = new StreamWriter(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\eyetracking_data\gaze.csv");
+            //sw = new StreamWriter(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\eyetracking_data\gaze.csv");
+            sw = new StreamWriter(@"eyetracking_data\gaze.csv");
             try
             {
            //     socket = IO.Socket("http://127.0.0.1:6789");
@@ -53,9 +50,7 @@ namespace eyetrack
             {
                 Console.WriteLine(e);
             }
-            
         }
-
  
         public void Close()
         {
@@ -63,19 +58,15 @@ namespace eyetrack
             EyeTracker.ShutDown();
         }
 
-
         Color4 bg = new Color4(0.5f, 0.5f, 0.5f, 1.0f);
         
         public void OnFrameUpdate()
         {
-
-           
             Vector3d leye; 
             Vector3d reye;
             Vector3d lgaze;
             Vector3d rgaze;
 
-            
             leye = Vector3d.TransformPosition(EyeTracker.EyeLeftSmooth.EyePosition, EyeTracker.EyeToScreen);
             reye = Vector3d.TransformPosition(EyeTracker.EyeRightSmooth.EyePosition, EyeTracker.EyeToScreen);
 

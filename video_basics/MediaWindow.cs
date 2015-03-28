@@ -78,7 +78,8 @@ namespace testmediasmall
                     GL.Vertex2(i, j);
                     GL.End();
                     //stream writer
-                    sw.WriteLine(DateTime.Now + "," + Video.Pixels[j, i].R 
+                    sw.WriteLine(DateTime.Now + "," + j + "," + i
+                                              + "," + Video.Pixels[j, i].R 
                                               + "," + Video.Pixels[j, i].G 
                                               + "," + Video.Pixels[j, i].B );
                 }

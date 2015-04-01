@@ -59,6 +59,7 @@ namespace testmediasmall
             //Start modification of the model matrix
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadIdentity();
+            
             for (int j = 0; j < Video.ResY; ++j)
             {
                 for (int i = 0; i < Video.ResX; ++i)
@@ -162,7 +163,7 @@ namespace testmediasmall
                 GL.Vertex2(v);
             }
             GL.End();
-
+            
             if (!sound.IsPlaying)
             {
                 sound.SilenceAllFrequencies();
@@ -184,7 +185,7 @@ namespace testmediasmall
             }
 
         }
-
+        
         Random rnd = new Random();
         double MotionXSmooth = 0.0;
         double MotionYSmooth = 0.0;

@@ -79,11 +79,19 @@ namespace testmediasmall
                     GL.Begin(BeginMode.Points);
                     GL.Vertex2(i, j);
                     GL.End();
+                    //draw movement 
+                    GL.LineWidth(1.0f);
+                    //GL.Begin(PrimitiveType.LineStrip);
+                    //GL.Begin(GL_LINES);
+                    //why won't these work? 
+
+                    GL.End();
                     //stream writer
                     sw.WriteLine(DateTime.Now + "," + j + "," + i
                                               + "," + Video.Pixels[j, i].R 
                                               + "," + Video.Pixels[j, i].G 
-                                              + "," + Video.Pixels[j, i].B );
+                                              + "," + Video.Pixels[j, i].B
+                                              + "," + Video.Pixels[j, i].V );
                 }
             }
             

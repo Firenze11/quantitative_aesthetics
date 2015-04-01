@@ -59,7 +59,7 @@ namespace testmediasmall
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
             GL.Ortho(0.0, Video.ResX, 0.0, Video.ResY, -1.0, 1.0);
-            GL.Color4(1.0, 1.0, 1.0, 1.0);
+            //GL.Color4(1.0, 1.0, 1.0, 1.0);
 
             /*for (int i = 0; i < Video.ResX; ++i)
             {
@@ -73,7 +73,9 @@ namespace testmediasmall
             {
                 for (int i = 0; i < Video.ResX; ++i)
                 {
-                    GL.PointSize((float)(1.0 + Video.Pixels[j, i].V * 20.0));
+                    //GL.PointSize((float)(1.0 + Video.Pixels[j, i].V * 20.0));
+                    GL.PointSize((float)(Video.ResX));
+                    GL.Color4(Video.Pixels[j, i].R,Video.Pixels[j, i].G, Video.Pixels[j, i].B, 1.0);
                     GL.Begin(BeginMode.Points);
                     GL.Vertex2(i, j);
                     GL.End();

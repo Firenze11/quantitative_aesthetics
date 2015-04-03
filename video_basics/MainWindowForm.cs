@@ -35,8 +35,6 @@ namespace testmediasmall
 
             GLviewport.Location = new Point(0, 0);
             GLviewport.Size = new System.Drawing.Size(ClientSize.Width-flayoutsize, ClientSize.Height);*/
-
-            
         }
 
         void UpdateFrame()

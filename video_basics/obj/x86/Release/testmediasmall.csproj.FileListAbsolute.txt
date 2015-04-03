@@ -53,3 +53,17 @@ C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\obj\x86\Release\testmediasmall.MainWindowForm.resources
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\obj\x86\Release\testmediasmall.Properties.Resources.resources
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\obj\x86\Release\testmediasmall.csproj.GenerateResource.Cache
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.CV.dll
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.CV.UI.dll
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.Util.dll
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\ZedGraph.dll
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.CV.xml
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.CV.UI.xml
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.Util.xml
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\opencv_core2410.dll
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\opencv_imgproc2410.dll
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.CV.GPU.dll
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.CV.GPU.xml
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\obj\x86\Release\testmediasmall.RGBHistogram.resources
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\OpenTK.pdb
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\OpenTK.xml

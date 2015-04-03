@@ -160,7 +160,7 @@ namespace GLutils
                 displist = GL.GenLists(1);
                 GL.NewList(displist, ListMode.Compile);
 
-                GL.Begin(BeginMode.Quads);
+                GL.Begin(PrimitiveType.Quads);
                 GL.Normal3(0.0, 0.0, 1.0);
 
                 GL.TexCoord2(0.0, 0.0);
@@ -195,7 +195,7 @@ namespace GLutils
             {
                 displist0 = GL.GenLists(1);
                 GL.NewList(displist0, ListMode.Compile);
-                GL.Begin(BeginMode.Quads);
+                GL.Begin(PrimitiveType.Quads);
                 GL.Normal3(0.0, 0.0, 1.0);
                 GL.TexCoord2(0.0, 0.0);
                 GL.Vertex2(0.0, 0.0);
@@ -517,7 +517,7 @@ namespace GLutils
             double ty0 = (bitmap.Height - DrawnTextRectangleF.Height) / (double)bitmap.Height;
             double tx1 = DrawnTextRectangleF.Width / (double)bitmap.Width;
 
-            GL.Begin(BeginMode.Quads);
+            GL.Begin(PrimitiveType.Quads);
             GL.TexCoord2(0.0, ty0);
             GL.Vertex2(_x0, _y0);
 
@@ -551,7 +551,7 @@ namespace GLutils
             double ty0 = (bitmap.Height - DrawnTextRectangleF.Height) / (double)bitmap.Height;
             double tx1 = DrawnTextRectangleF.Width / (double)bitmap.Width;
 
-            GL.Begin(BeginMode.Quads);
+            GL.Begin(PrimitiveType.Quads);
             GL.TexCoord2(0.0, ty0);
             GL.Vertex2(_x0, _y0);
 
@@ -624,7 +624,7 @@ namespace GLutils
             double ty0 = (bitmap.Height - DrawnTextRectangleF.Height) / (double)bitmap.Height;
             double tx1 = DrawnTextRectangleF.Width / (double)bitmap.Width;
 
-            GL.Begin(BeginMode.Quads);
+            GL.Begin(PrimitiveType.Quads);
             GL.TexCoord2(0.0, 1.0);
             GL.Vertex3(_p0);
 

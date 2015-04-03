@@ -539,7 +539,7 @@ namespace testmediasmall
 
         static public void DrawTexturedQuad(double x0, double y0, double w, double h)
         {
-            GL.Begin(BeginMode.Quads);
+            GL.Begin(PrimitiveType.Quads);
             GL.TexCoord2(0.0, 0.0);
             GL.Vertex2(x0, y0);
 

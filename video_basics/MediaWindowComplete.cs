@@ -66,7 +66,7 @@ namespace testmediasmall
                 {
                     GL.PointSize((float)((Video.Pixels[j, i].V) * 20.0));
                     GL.Color4(1.0, 1.0, 1.0, 1.0);
-                    GL.Begin(BeginMode.Points);
+                    GL.Begin(PrimitiveType.Points);
                     GL.Vertex2(i, j);
                     GL.End();
                 }
@@ -78,7 +78,7 @@ namespace testmediasmall
                     double diff = Math.Abs(Video.Pixels[j, i].V - Video.Pixels[j, i].V0);
                     GL.PointSize((float)(diff * 50.0));
                     GL.Color4(1.0, 0.0, 0.0, 0.5);
-                    GL.Begin(BeginMode.Points);
+                    GL.Begin(PrimitiveType.Points);
                     GL.Vertex2(i, j);
                     GL.End();
                 }
@@ -86,7 +86,7 @@ namespace testmediasmall
 
             GL.Color4(0.0, 0.0, 0.0, 0.5);
             GL.LineWidth(1.0f);
-            GL.Begin(BeginMode.Lines);
+            GL.Begin(PrimitiveType.Lines);
             for (int j = 0; j < Video.ResY; ++j)
             {
                 for (int i = 0; i < Video.ResX; ++i)
@@ -128,14 +128,14 @@ namespace testmediasmall
             GL.PointSize((float)(5.0 + mtotal * 0.5));
             GL.Color4(0.0, 0.0, 0.0, 0.5);
 
-            GL.Begin(BeginMode.Points);
+            GL.Begin(PrimitiveType.Points);
             GL.Vertex2(mx, my);
             GL.End();
 
 
             GL.Color4(0.0, 0.0, 0.0, 1.0);
             GL.LineWidth(5.0f);
-            GL.Begin(BeginMode.Lines);
+            GL.Begin(PrimitiveType.Lines);
             GL.Vertex2(mx, my);
             GL.Vertex2(mx + avgDX * 60.0, my + avgDY * 60.0);
             GL.End();
@@ -148,7 +148,7 @@ namespace testmediasmall
             GL.PointSize(10.0f);
             GL.Color4(0.0, 0.0, 0.0, 1.0);
 
-            GL.Begin(BeginMode.Points);
+            GL.Begin(PrimitiveType.Points);
             GL.Vertex2(MotionXSmooth, MotionYSmooth);
             GL.End();
 
@@ -157,7 +157,7 @@ namespace testmediasmall
 
             GL.Color4(0.0, 0.0, 0.0, 1.0);
             GL.LineWidth(1.0f);
-            GL.Begin(BeginMode.LineStrip);
+            GL.Begin(PrimitiveType.LineStrip);
             foreach (Vector2d v in mpoints)
             {
                 GL.Vertex2(v);

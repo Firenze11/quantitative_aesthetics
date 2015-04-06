@@ -9,15 +9,15 @@ using C_sawapan_media;
 using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
-using Emgu.CV;
-using Emgu.Util;
-using Emgu.CV.Structure;
+//using Emgu.CV;
+//using Emgu.Util;
+//using Emgu.CV.Structure;
 
 namespace testmediasmall
 {
     public class MediaWindow
     {
-        ColorAnalysis RGBColor = new ColorAnalysis();
+        //ColorAnalysis RGBColor = new ColorAnalysis();
 
         public int Width = 0;       //width of the viewport in pixels
         public int Height = 0;      //height of the viewport in pixels
@@ -38,7 +38,7 @@ namespace testmediasmall
         {
             //intialize Video capturing from primary camera [0] at a low resolution
             VideoIN.EnumCaptureDevices();
-            Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
+            //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             //  Video.StartVideoFile(@"C:\Users\pan\Desktop\out2.avi");
             Video.SetResolution(40, 30);
             sw = new StreamWriter(@"frame_info.csv");
@@ -114,7 +114,7 @@ namespace testmediasmall
                 }
             }
             
-            RGBColor.FrameUpdate(px, rx, ry);
+            //RGBColor.FrameUpdate(px, rx, ry);
         }
     }
 }

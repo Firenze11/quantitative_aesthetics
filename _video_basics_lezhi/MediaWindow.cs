@@ -64,17 +64,6 @@ namespace testmediasmall
             GL.Ortho(0.0, Video.ResX, 0.0, Video.ResY, -1.0, 1.0);
             //GL.Color4(1.0, 1.0, 1.0, 1.0);
 
-            ////////color palette code
-            ColorQuant ColorQuantizer = new ColorQuant();
-            Colormap QColorMap = ColorQuantizer.MedianCutQuantGeneral(Video, 6);
-            sw.Write(DateTime.Now + ","); 
-            for (int i = 0; i < QColorMap.Count; i++)
-            {
-                sw.Write(QColorMap[i].R + "," + QColorMap[i].G + "," + QColorMap[i].B + ","); 
-            }
-            sw.WriteLine("");
-            ////////end of color palette code
-
                 /*for (int i = 0; i < Video.ResX; ++i)
                 {
                     GL.PointSize((float)(1.0+Video.Pixels[0,i].V*20.0));
@@ -88,7 +77,7 @@ namespace testmediasmall
                 for (int i = 0; i < Video.ResX; ++i)
                 {
                     //GL.PointSize((float)(1.0 + Video.Pixels[j, i].V * 20.0));
-                    GL.PointSize((float)(Video.ResX));
+                    GL.PointSize((float)(15));
                     GL.Color4(Video.Pixels[j, i].R, Video.Pixels[j, i].G, Video.Pixels[j, i].B, 1.0);
                     GL.Begin(BeginMode.Points);
                     GL.Vertex2(i, j);
@@ -108,7 +97,24 @@ namespace testmediasmall
                                                 + "," + HSV.hsv(r,g,b) [2]); */
                 }
             }
-            
+
+            ////////color palette code
+            ColorQuant ColorQuantizer = new ColorQuant();
+            Colormap QColorMap = ColorQuantizer.MedianCutQuantGeneral(Video, 6);
+            sw.Write(DateTime.Now + ",");
+            for (int i = 0; i < QColorMap.Count; i++)
+            {
+                sw.Write(QColorMap[i].R + "," + QColorMap[i].G + "," + QColorMap[i].B + ",");
+
+                GL.PointSize((float)(50));
+                GL.Color4(QColorMap[i].R / 255.0 , QColorMap[i].G / 255.0, QColorMap[i].B / 255.0 , 1.0);
+                GL.Begin(BeginMode.Points);
+                GL.Vertex2(5 + 2 * i, 7);
+                GL.End();
+            }
+            sw.WriteLine("");
+            ////////end of color palette code
+                        
         }
     }
 }

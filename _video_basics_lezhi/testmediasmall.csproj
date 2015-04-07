@@ -63,7 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ColorQuant.cs" />
-    <Compile Include="hsv.cs" />
+    <Compile Include="helper.cs" />
     <Compile Include="CPal.cs" />
     <Compile Include="C_geometry.cs" />
     <Compile Include="GLhelper.cs" />

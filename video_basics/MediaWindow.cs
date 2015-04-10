@@ -33,6 +33,7 @@ namespace testmediasmall
         VideoIN Video = new VideoIN();
 
         StreamWriter sw;
+
         //initialization function. Everything you write here is executed once in the begining of the program
         public void Initialize()
         {
@@ -83,15 +84,20 @@ namespace testmediasmall
 
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
-            GL.Ortho(0.0, Video.ResX, 0.0, Video.ResY, -1.0, 1.0);
+            GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
-
-            for (int j = 0; j < Video.ResY; ++j)
+            List<int> RGB_bin = new List<int>();
+            for (int i = 0; i < 10; i++)
             {
-                for (int i = 0; i < Video.ResX; ++i)
+                RGB_bin.Add(0);
+            }
+
+            for (int j = 0; j < ry; ++j)
+            {
+                for (int i = 0; i < rx; ++i)
                 {
                     //GL.PointSize((float)(1.0 + Video.Pixels[j, i].V * 20.0));
-                    GL.PointSize((float)(Video.ResX));
+                    GL.PointSize((float)(rx));
                     GL.Color4(Video.Pixels[j, i].R,Video.Pixels[j, i].G, Video.Pixels[j, i].B, 1.0);
                     GL.Begin(PrimitiveType.Points);
                     GL.Vertex2(i, j);
@@ -99,11 +105,9 @@ namespace testmediasmall
                     //draw movement 
                     GL.LineWidth(1.0f);
                     //GL.Begin(PrimitiveType.LineStrip);
-                    //GL.Begin(GL_LINES);
-                    //why won't these work? 
                   
                     GL.End();
-                    
+
                     //stream writer
                     sw.WriteLine(DateTime.Now + "," + j + "," + i
                                               + "," + Video.Pixels[j, i].R 
@@ -111,10 +115,61 @@ namespace testmediasmall
                                               + "," + Video.Pixels[j, i].B
                                               + "," + Video.Pixels[j, i].V
                                               );
+
+                    /*
+                    double R = Video.Pixels[j, i].R;
+                    
+                    //rgb histogram
+                    int range =256;
+                    int binNum = 10;
+                    int binWidth = range / binNum;
+
+                    if (R < binWidth) RGB_bin[0] += 1;
+                    else
+                    { 
+                        for (int k = 1; k < binNum - 2; k++)
+                        {
+                            RGB_bin[k] += 1;
+                            binWidth++;
+                        }
+                    }*/
                 }
             }
             
+            int nx = 4;
+            int ny = 4;
+            int sub_x = rx / nx;
+            int sub_y = ry / ny;
+
             RGBColor.FrameUpdate(px, rx, ry);
+            //split screen
+            /*for (int j = 0; j < ny; ++j)
+            {
+                for (int i = 0; i < nx; ++i)
+                {
+                    GL.Color4(0.0, 1.0, 1.0, 1.0);
+                    GL.Begin(PrimitiveType.LineStrip);
+                    GL.LineWidth(1.0f);
+                    for (int k = 0; k < ry; k++)
+                    {  
+                        GL.Vertex2(sub_x, k); 
+                    }
+                    GL.End();
+                    
+                    //RGBColor.FrameUpdate(px, sub_x, sub_y);
+                    sub_x+=sub_x;
+                }
+                GL.Color4(0.0, 1.0, 1.0, 1.0);
+                GL.Begin(PrimitiveType.LineStrip);
+                GL.LineWidth(1.0f);
+                for (int k = 0; k < ry; k++)
+                {
+                    GL.Vertex2(k, sub_y);
+                }
+                GL.End();
+                sub_y+=sub_y;
+            }*/
+            
         }
     }
 }

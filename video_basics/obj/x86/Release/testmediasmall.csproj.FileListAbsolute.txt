@@ -64,6 +64,5 @@ C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\opencv_imgproc2410.dll
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.CV.GPU.dll
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\Emgu.CV.GPU.xml
-C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\obj\x86\Release\testmediasmall.RGBHistogram.resources
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\OpenTK.pdb
 C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\bin\Release\OpenTK.xml

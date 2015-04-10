@@ -35,14 +35,26 @@ namespace testmediasmall
         RGBHisto HistoR = new RGBHisto();
         RGBHisto HistoG = new RGBHisto();
         RGBHisto HistoB = new RGBHisto();
+        RGBHisto HistoH = new RGBHisto();
+        RGBHisto HistoS = new RGBHisto();
+        RGBHisto HistoV = new RGBHisto();
+
+        // byte[, ,] mask1data;
+        // byte[, ,] mask2data;
+        // Image<Gray, byte> mask1;
+        // Image<Gray, byte> mask2;
+
+        List<byte[, ,]> maskData = new List<byte[, ,]>();
+        List<Image<Gray, byte>> masks = new List<Image<Gray, byte>>();
 
         StreamWriter histo_writer;
 
-        public void FrameUpdate(VideoPixel[,] px, int rx, int ry) {
-
+        public void Init(VideoPixel[,] px, int rx, int ry)
+        {
             if (histo_writer == null)
             {
-                histo_writer = new StreamWriter("C:/Users/anakano/Documents/Classes/GSD6432/Final_Project/quantitative_aesthetics/video_basics/histo.csv"); 
+                histo_writer = new StreamWriter("C:/Users/anakano/Documents/Classes/GSD6432/Final_Project/quantitative_aesthetics/video_basics/histo.csv");
+                histo_writer.Flush();
             }
             if (imgdata == null)
             {
@@ -50,7 +62,53 @@ namespace testmediasmall
                 imgdataR = new byte[ry, rx, 1];
                 imgdataG = new byte[ry, rx, 1];
                 imgdataB = new byte[ry, rx, 1];
+
                 imgdataBGR = new byte[ry, rx, 3];
+
+                //........................................................mask to split screen areas
+                for (int k = 0; k < 5; ++k)
+                {
+                    byte[, ,] mdat = new byte[ry, rx, 1];
+                    maskData.Add(mdat);
+                }
+
+                //create mask:
+                /* 
+                |  --     3    --  |
+                |   1  |  0  |  2  |
+                |  --     4    --  |
+                 */
+
+                //j2 starts from the bottom left corner
+                for (int j = 0; j < ry; ++j)
+                {
+                    int j2 = ry - j - 1;
+                    for (int i = 0; i < rx; ++i)
+                    {
+                        if (j2 > (3 * ry) / 4) maskData[3][j2, i, 0] = 255;
+                        else maskData[3][j2, i, 0] = 0;
+
+                        if (j2 >= ry / 4 && j2 <= (3 * ry) / 4)
+                        {
+                            if (i < (rx / 4)) maskData[1][j2, i, 0] = 255;
+                            else maskData[1][j2, i, 0] = 0;
+
+                            if (i >= (rx / 4) && i <= (rx * 3) / 4) maskData[0][j2, i, 0] = 255;
+                            else maskData[0][j2, i, 0] = 0;
+
+                            if (i > (3 * rx) / 4) maskData[2][j2, i, 0] = 255;
+                            else maskData[2][j2, i, 0] = 0;
+                        }
+
+                        if (j2 < ry / 4) maskData[4][j2, i, 0] = 255;
+                        else maskData[4][j2, i, 0] = 0;
+                    }
+                }
+
+                for (int k = 0; k < maskData.Count; ++k)
+                {
+                    masks.Add(new Image<Gray, byte>(maskData[k]));
+                }
             }
 
             for (int j = 0; j < ry; ++j)
@@ -66,16 +124,9 @@ namespace testmediasmall
                     imgdataR[j2, i, 0] = (byte)((px[j, i].R * 255.0));
                     imgdataG[j2, i, 0] = (byte)((px[j, i].G * 255.0));
                     imgdataB[j2, i, 0] = (byte)((px[j, i].B * 255.0));
-
-                    int max = Math.Max(imgdataR[j2, i, 0], Math.Max(imgdataG[j2, i, 0], imgdataB[j2, i, 0]));
-                    int min = Math.Min(imgdataR[j2, i, 0], Math.Min(imgdataG[j2, i, 0], imgdataB[j2, i, 0]));
-
-                    //int hue = (int)(imgdata.GetHue() * 256f / 360f);
-                    int saturation = (max == 0) ? 0 : (int)(1.0 - (1.0 * min / max));
-                    int value = (int)(max / 255.0);
                 }
             }
-            
+
             if (gray == null)
             {
                 gray = new Image<Gray, byte>(imgdata);
@@ -97,81 +148,102 @@ namespace testmediasmall
                 imgB.Data = imgdataB;
             }
 
-            float[] HistRA = HistoR.CalculateRGBHistogram(imgR);
-            float[] HistGA = HistoG.CalculateRGBHistogram(imgG);
-            float[] HistBA = HistoB.CalculateRGBHistogram(imgB);
+            Image<Hsv, Byte> hsvImage = new Image<Hsv, Byte>(imgdata);
+            Hsv hsvColour = hsvImage[0, 0];
 
-            //render histogram on screen
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.LoadIdentity();
-            GL.Ortho(0.0, 255, 0.0, 255, -1.0, 1.0);
-
-            GL.Color4(1.0, 0.0, 0.0, 1.0);
-            GL.Begin(PrimitiveType.LineStrip);
-            for (int i = 0; i < HistRA.Length; ++i)
-            {
-                GL.Vertex2(i, 10.0 + HistRA[i]);
-            }
-            GL.End();
-
-            GL.Color4(0.0, 1.0, 0.0, 1.0);
-            GL.Begin(PrimitiveType.LineStrip);
-            for (int i = 0; i < HistGA.Length; ++i)
-            {
-                GL.Vertex2(i, 10.0 + HistGA[i]);
-            }
-            GL.End();
-
-            GL.Color4(0.0, 0.0, 1.0, 1.0);
-            GL.Begin(PrimitiveType.LineStrip);
-            for (int i = 0; i < HistBA.Length; ++i)
-            {
-                GL.Vertex2(i, 10.0 + HistBA[i]);
-            }
-            GL.End();
-
-
-      
-            for (int k = 0; k < HistoR.binSize; k++)
-            {
-                histo_writer.Write(
-                HistRA[k] + "," +
-                HistGA[k] + "," +
-                HistBA[k] + ","
-                );            
-            }
-            histo_writer.WriteLine();
-
-           
+            //extract the hue and saturation channels
+            Image<Gray, Byte>[] channels = hsvImage.Split();
+            Image<Gray, Byte> imgHue = channels[0];
+            Image<Gray, Byte> imgSat = channels[1];
+            Image<Gray, Byte> imgVal = channels[2];
         }
 
-        public void CalculateHSV(Image<Gray, byte> imgR, Image<Gray, byte> imgG, Image<Gray, byte> imgB)
+        public void FrameUpdate(VideoPixel[,] px, int rx, int ry)
         {
-           /*int max = Math.Max(imgR, Math.Max(imgG, imgB));
-            int min = Math.Min(color.R, Math.Min(color.G, color.B));
+            Init(px, rx, ry);
 
-            hue = (int)(color.GetHue() * 256f / 360f);
-            saturation = (max == 0) ? 0 : (int)(1d - (1d * min / max));
-            value = (int)(max / 255d);
-            */
+            //imgR.ROI = new System.Drawing.Rectangle(0, 0, 10, 10);
+            //float[] HistRA = HistoR.CalculateRGBHistogram(imgR.Copy());
+            //visualize histogram 
+
+            for (int m = 0; m < masks.Count; ++m)
+            {
+                histo_writer.Write("mask" + m + ",");
+                float[] HistRA = HistoR.CalculateRGBHistogram(imgR, masks[m]);
+                float[] HistGA = HistoG.CalculateRGBHistogram(imgG, masks[m]);
+                float[] HistBA = HistoB.CalculateRGBHistogram(imgB, masks[m]);
+
+                float[] HistSA = HistoH.CalculateRGBHistogram(imgHue, masks[m]);
+
+                //render histogram on screen
+                GL.MatrixMode(MatrixMode.Projection);
+                GL.LoadIdentity();
+                GL.Ortho(0.0, HistoR.binNum, 0.0, (rx / 4) * (ry / 2) * masks.Count * 3, -1.0, 1.0);    //min bin size of 450 
+
+                //RGB histo for masks 0 - 4, 0 being at the top
+                GL.Color4(1.0, 0.0, 0.0, 1.0);
+                GL.Begin(PrimitiveType.LineStrip);
+                for (int i = 0; i < HistRA.Length; ++i)
+                {
+                    GL.Vertex2(i, 10.0 + HistRA[i] + rx * rx / (masks.Count) * m);
+
+                }
+                GL.End();
+
+                GL.Color4(0.0, 1.0, 0.0, 1.0);
+                GL.Begin(PrimitiveType.LineStrip);
+                for (int i = 0; i < HistGA.Length; ++i)
+                {
+                    GL.Vertex2(i, 10.0 + HistGA[i] + rx * rx / (masks.Count) * m);
+                }
+                GL.End();
+
+                GL.Color4(0.0, 0.0, 1.0, 1.0);
+                GL.Begin(PrimitiveType.LineStrip);
+                for (int i = 0; i < HistBA.Length; ++i)
+                {
+                    GL.Vertex2(i, 10.0 + HistBA[i] + rx * rx / (masks.Count) * m);
+                }
+                GL.End();
+
+                GL.Color4(1.0, 0.0, 1.0, 1.0);
+                GL.Begin(PrimitiveType.LineStrip);
+                for (int i = 0; i < HistSA.Length; ++i)
+                {
+                    GL.Vertex2(i, 10.0 + HistSA[i] + rx * rx / (masks.Count) * m);
+                }
+                GL.End();
+
+                for (int k = 0; k < HistoR.binNum; k++)
+                {
+                    histo_writer.Write(
+                    HistRA[k] + "," +
+                    HistGA[k] + "," +
+                    HistBA[k] + ","
+                    );
+                }
+            }
+
+            histo_writer.WriteLine(); //move to next line for each frame update  
         }
     }
 
     public class RGBHisto
     {
-        public int binSize = 10;
+        public int binNum = 10;
         public int range = 256;
         DenseHistogram Histogram;
-        
-        public float[] CalculateRGBHistogram(Image<Gray, byte> imgRGB)
+
+        public float[] CalculateRGBHistogram(Image<Gray, byte> imgRGB, Image<Gray, byte> mask)
         {
-            Histogram = new DenseHistogram(binSize, new RangeF(0, 256));
-            Histogram.Calculate(new Image<Gray, Byte>[] { imgRGB }, true, null);
+            Histogram = new DenseHistogram(binNum, new RangeF(0, 256));
+            // imgRGB.ROI = new System.Drawing.Rectangle(0, 0, 20, 20);
+            Histogram.Calculate(new Image<Gray, Byte>[] { imgRGB }, false, mask);
             float[] HistRGBValues = new float[range];
             Histogram.MatND.ManagedArray.CopyTo(HistRGBValues, 0);
             Histogram.Clear();
 
             return HistRGBValues;
-        }
+        }  
     }
 }

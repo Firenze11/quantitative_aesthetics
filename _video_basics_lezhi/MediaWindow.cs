@@ -35,9 +35,9 @@ namespace testmediasmall
         {
             //intialize Video capturing from primary camera [0] at a low resolution
             VideoIN.EnumCaptureDevices();
-            Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
-            //  Video.StartVideoFile(@"C:\Users\pan\Desktop\out2.avi");
-            Video.SetResolution(40, 30);
+            //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
+            Video.StartVideoFile(@"C:\Users\lezhi\Projects\quantitative_aesthetics\_video_basics_lezhi\_testVideo2.avi");
+          //  Video.SetResolution(40, 30);
             sw = new StreamWriter(@"frame_info.csv");
         }
         public void Close()
@@ -100,16 +100,16 @@ namespace testmediasmall
 
             ////////color palette code
             ColorQuant ColorQuantizer = new ColorQuant();
-            Colormap QColorMap = ColorQuantizer.MedianCutQuantGeneral(Video, 6);
+            Colormap QColorMap = ColorQuantizer.MedianCutQuantGeneral(Video, 16);
             sw.Write(DateTime.Now + ",");
             for (int i = 0; i < QColorMap.Count; i++)
             {
                 sw.Write(QColorMap[i].R + "," + QColorMap[i].G + "," + QColorMap[i].B + ",");
 
-                GL.PointSize((float)(50));
+                GL.PointSize((float)(60));
                 GL.Color4(QColorMap[i].R / 255.0 , QColorMap[i].G / 255.0, QColorMap[i].B / 255.0 , 1.0);
                 GL.Begin(BeginMode.Points);
-                GL.Vertex2(5 + 2 * i, 7);
+                GL.Vertex2(30 + 30 * i, 20);
                 GL.End();
             }
             sw.WriteLine("");

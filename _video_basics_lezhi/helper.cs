@@ -5,11 +5,9 @@ using System.Text;
 
 namespace testmediasmall
 {
-    class HSV
+    static class HSV
     {
-        public HSV()
-        {
-        }
+        
         public static double[] hsv(double r, double g, double b)
         {
             double cmax;
@@ -27,25 +25,35 @@ namespace testmediasmall
             else if (g < b) { cmin = g; }
             else { cmin = b; }
 
-            double delta = cmax = cmin;
+            double delta = cmax - cmin;
 
-            if (delta == 0) { h= 0; }
-            else if (cmax == r)
+            if (cmax == 0) // if white
             {
-                h= (((g - b) / delta) % 6) / 6;
+                s = 0; h = -1;
             }
-            else if (cmax == g)
+            else
             {
-                h= (((b - r) / delta) + 2) / 6;
-            }
-            else //if (cmax == b)
-            {
-                h= (((r - g) / delta) + 4) / 6;
-            }
-            if (h < 0) { h += 1; }
+                if (delta == 0) 
+                { 
+                    h= 0; 
+                }
+                else if (cmax == r)
+                {
+                    h= (((g - b) / delta) % 6) / 6.0;
+                }
+                else if (cmax == g)
+                {
+                    h= (((b - r) / delta) + 2.0) / 6.0;
+                }
+                else //if (cmax == b)
+                {
+                    h= (((r - g) / delta) + 4.0) / 6.0;
+                }
+                if (h < 0) { h += 1; }
 
-            if (delta == 0) { s= 0; }        //s
-            else { s= (delta / cmax); }
+                if (delta == 0) { s= 0; }        //s
+                else { s= delta / cmax ; }
+            }
 
             v = cmax;                        //v
 

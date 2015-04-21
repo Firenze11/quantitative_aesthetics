@@ -86,28 +86,29 @@ namespace testmediasmall
                                                 + "," + Video.Pixels[j, i].G 
                                                 + "," + Video.Pixels[j, i].B );
                         */
-                    /* double r = Video.Pixels[j, i].R;
+                    double r = Video.Pixels[j, i].R;
                     double g = Video.Pixels[j, i].G;
                     double b = Video.Pixels[j, i].B;
-                    sw.WriteLine(DateTime.Now + "," + j + "," + i
-                                                + "," + HSV.hsv(r,g,b) [0]
-                                                + "," + HSV.hsv(r,g,b) [1]
-                                                + "," + HSV.hsv(r,g,b) [2]); */
+                    /*sw.WriteLine(DateTime.Now + "," + j + "," + i
+                                              + "," + HSV.hsv(r, g, b)[0]
+                                              + "," + HSV.hsv(r, g, b)[1]
+                                              + "," + HSV.hsv(r, g, b)[2]); */
                 }
             }
 
             ////////color palette code
             ColorQuant ColorQuantizer = new ColorQuant();
-            Colormap QColorMap = ColorQuantizer.MedianCutQuantGeneral(Video, 16);
+            Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(Video, 26);
+            Colormap QColorMap = ColorQuantizer.SortByDifference(initialCMap);
             sw.Write(DateTime.Now + ",");
             for (int i = 0; i < QColorMap.Count; i++)
             {
                 sw.Write(QColorMap[i].R + "," + QColorMap[i].G + "," + QColorMap[i].B + ",");
-
+                //sw.Write(ColorQuantizer.TranslateHSV(QColorMap[i])[0] + ",");
                 GL.PointSize((float)(60));
                 GL.Color4(QColorMap[i].R / 255.0 , QColorMap[i].G / 255.0, QColorMap[i].B / 255.0 , 1.0);
                 GL.Begin(BeginMode.Points);
-                GL.Vertex2(30 + 30 * i, 20);
+                GL.Vertex2(20 + 10 * i, 20);
                 GL.End();
             }
             sw.WriteLine("");

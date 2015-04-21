@@ -41,6 +41,7 @@ namespace testmediasmall
         {
             if (!loaded) return;
             mediawin.OnFrameUpdate();
+
             GLviewport.SwapBuffers();
         }
 

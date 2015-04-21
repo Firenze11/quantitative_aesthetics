@@ -306,6 +306,54 @@ namespace testmediasmall
          * divide DIF_CAP by 8. */
         const int DIF_CAP = 100;
 
+        //-----------------------------------------------------------------------------sorting code
+        private double[] TranslateHSV(RGBA_Quad rgba)
+        {
+            return HSV.hsv(rgba.R / 255.0, rgba.G / 255.0, rgba.B / 255.0);
+        }
+        /*public double ColorCharacteristic(RGBA_Quad rgba)
+        {
+            double[] chara = HSV.hsv(rgba.R / 255.0, rgba.G / 255.0, rgba.B / 255.0);
+            return (100 * chara[0] * chara[0]) + chara[2] * chara[2];
+        }*/
+        public Colormap SortByHue (Colormap cmap)
+        {
+            List<RGBA_Quad> sortedmap = (List < RGBA_Quad >) cmap;
+            for (int i = 0; i < sortedmap.Count - 1; i++) //swap sorting
+            {
+                sortedmap.Sort((x, y) => TranslateHSV(x)[0].CompareTo(TranslateHSV(y)[0]));
+            }
+            return (Colormap)sortedmap;
+        }
+        private double Difference(RGBA_Quad c, double[] _avg)
+        {
+            double diffH = Math.Abs(TranslateHSV(c)[0] - _avg[0]);
+            double diffS = Math.Abs(TranslateHSV(c)[1] - _avg[1]);
+            double diffV = Math.Abs(TranslateHSV(c)[2] - _avg[2]);
+            return 10 * diffH * diffH + diffV * diffV;
+        }
+        public Colormap SortByDifference(Colormap cmap)
+        {
+            List<RGBA_Quad> sortedmap = cmap;
+            double[] diffs = new double[sortedmap.Count];
+            double[] avg = new double[3];
+
+            for (int i = 0; i < sortedmap.Count - 1; i++)
+            {
+                avg[0] += TranslateHSV(cmap[i]) [0];
+                avg[1] += TranslateHSV(cmap[i]) [1];
+                avg[2] += TranslateHSV(cmap[i]) [2];
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                avg[i] = (double)(avg[i] / sortedmap.Count);
+            }
+
+            sortedmap.Sort((x, y) => Difference(y,avg).CompareTo(Difference(x,avg)));
+            return (Colormap) sortedmap;
+        }
+        //------------------------------------------------------------------------end of sorting code
+
         public Colormap MedianCutQuant(PIX pixs, int ditherflag)
         {
             return MedianCutQuantGeneral(pixs, ditherflag, 256, 1);
@@ -377,7 +425,6 @@ namespace testmediasmall
                                    0, (1 << SIGBITS) - 1);
             else
                 vbox = pixs.GetColorRegion(subsample);
-
 
             vbox.npix = vbox.GetCount(histo);
             vbox.vol = vbox.GetVolume();

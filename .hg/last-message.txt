@@ -1,1 +1,1 @@
-screen split into 5
+implemented shuffling of video frames

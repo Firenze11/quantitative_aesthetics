@@ -23,7 +23,7 @@ namespace testmediasmall
         public GLutils.C_View Viewer = new GLutils.C_View();
         // An image object to hold the latest camera frame
         VBitmap Videoimage = new VBitmap(120, 120);
-
+        
         VideoIN Video = new VideoIN();
         SoundSampleFreq sound;
 
@@ -36,7 +36,7 @@ namespace testmediasmall
             sound = SoundOUT.TheSoundOUT.AddEmptyFreqSample(0.3, 0.3);
             sound.Play(false);
         }
-
+    
         public void OnFrameUpdate()
         {
             if (!Video.IsVideoCapturing) return;
@@ -52,7 +52,7 @@ namespace testmediasmall
             GL.Disable(EnableCap.DepthTest);
             //Start modification of the projection matrix
             GL.MatrixMode(MatrixMode.Projection);
-            //reset the rojection matrix to the identity matrix 
+            //reset the projection matrix to the identity matrix 
             GL.LoadIdentity();
             //Set the projeciton matrix to an orthographic projection that matches the dimensions of the video
             GL.Ortho(0.0, Video.ResX, 0.0, Video.ResY, -10.0, 100.0);

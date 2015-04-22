@@ -33,8 +33,6 @@ namespace testmediasmall
         byte[, ,] imgdataB;
         public byte[, ,] imgdataBGR;
 
-        //public List<byte[, ,]> frameRGB = new List<byte[, ,]>();
-
         RGBHisto HistoR = new RGBHisto();
         RGBHisto HistoG = new RGBHisto();
         RGBHisto HistoB = new RGBHisto();
@@ -47,9 +45,13 @@ namespace testmediasmall
         float[] HistoGA;
         float[] HistoBA;
 
-        public byte[] HistoRA_byte;
-        public byte[] HistoGA_byte;
-        public byte[] HistoBA_byte;
+        public float avgr = 0;
+        public float avgg = 0;
+        public float avgb = 0;
+            
+        //public byte[] HistoRA_byte;
+        //public byte[] HistoGA_byte;
+        //public byte[] HistoBA_byte;
 
         // byte[, ,] mask1data;
         // byte[, ,] mask2data;
@@ -127,6 +129,7 @@ namespace testmediasmall
                 }
             }
 
+            
             //scan each pixel for rgb
             for (int j = 0; j < ry; ++j)
             {
@@ -142,9 +145,14 @@ namespace testmediasmall
                     imgdataG[j2, i, 0] = (byte)((px[j, i].G * 255.0));
                     imgdataB[j2, i, 0] = (byte)((px[j, i].B * 255.0));
 
-                    //frameRGB.Add(imgdataBGR);
+                    avgr += imgdataR[j2, i, 0] - (imgdataG[j2, i, 0] + imgdataB[j2, i, 0]) / 2;
+                    avgg += imgdataG[j2, i, 0] - (imgdataR[j2, i, 0] + imgdataB[j2, i, 0]) / 2;
+                    avgb += imgdataB[j2, i, 0] - (imgdataR[j2, i, 0] + imgdataG[j2, i, 0]) / 2;
                 }
             }
+            avgr = avgr / (rx * ry);
+            avgg = avgg / (rx * ry);
+            avgb = avgb / (rx * ry);
 
             //creates Grayscale image for openCV
             if (gray == null)
@@ -169,15 +177,14 @@ namespace testmediasmall
             }
 
             //.................................................................................HSV stuff
-            Image<Hsv, Byte> hsvImage = new Image<Hsv, Byte>(imgdata);
-            Hsv hsvColour = hsvImage[0, 0];
+            //Image<Hsv, Byte> hsvImage = new Image<Hsv, Byte>(imgdata);
+            //Hsv hsvColour = hsvImage[0, 0];
 
-            //extract the hue and saturation channels
-            Image<Gray, Byte>[] channels = hsvImage.Split();
-            Image<Gray, Byte> imgHue = channels[0];
-            Image<Gray, Byte> imgSat = channels[1];
-            Image<Gray, Byte> imgVal = channels[2];
-
+            ////extract the hue and saturation channels
+            //Image<Gray, Byte>[] channels = hsvImage.Split();
+            //Image<Gray, Byte> imgHue = channels[0];
+            //Image<Gray, Byte> imgSat = channels[1];
+            //Image<Gray, Byte> imgVal = channels[2];
             //................................................................................end HSV stuff
         }
 
@@ -189,12 +196,24 @@ namespace testmediasmall
             //float[] HistRA = HistoR.CalculateRGBHistogram(imgR.Copy());
             //visualize histogram 
 
-            for (int m = 0; m < masks.Count; ++m)
+            for (int j = 0; j < masks.Count; ++j)
             {
-                histo_writer.Write("mask" + m + ",");
-                HistoRA = HistoR.CalculateRGBHistogram(imgR, masks[m]);
-                HistoGA = HistoG.CalculateRGBHistogram(imgG, masks[m]);
-                HistoBA = HistoB.CalculateRGBHistogram(imgB, masks[m]);
+                histo_writer.Write("mask" + j + ",");
+                HistoRA = HistoR.CalculateRGBHistogram(imgR, masks[j]);
+                HistoGA = HistoG.CalculateRGBHistogram(imgG, masks[j]);
+                HistoBA = HistoB.CalculateRGBHistogram(imgB, masks[j]);
+
+                //get highest bin index
+                /*avgr = HistoRA.Max();
+                avgg = HistoGA.Max();
+                avgb = HistoBA.Max();
+                avgr_index = HistoRA.ToList().IndexOf(avgr);
+                avgg_index = HistoGA.ToList().IndexOf(avgg);
+                avgb_index = HistoBA.ToList().IndexOf(avgb);
+
+                avgb_index = avgb_index - (avgg_index + avgr_index) / 2;
+                */
+
 
                 //float[] HistSA = HistoH.CalculateRGBHistogram(imgHue, masks[m]);
 
@@ -208,7 +227,7 @@ namespace testmediasmall
                 GL.Begin(PrimitiveType.LineStrip);
                 for (int i = 0; i < HistoRA.Length; ++i)
                 {
-                    GL.Vertex2(i, 10.0 + HistoRA[i] + rx * rx / (masks.Count) * m);
+                    GL.Vertex2(i, 10.0 + HistoRA[i] + rx * rx / (masks.Count) * j);
                 }
                 GL.End();
 
@@ -216,7 +235,7 @@ namespace testmediasmall
                 GL.Begin(PrimitiveType.LineStrip);
                 for (int i = 0; i < HistoGA.Length; ++i)
                 {
-                    GL.Vertex2(i, 10.0 + HistoGA[i] + rx * rx / (masks.Count) * m);
+                    GL.Vertex2(i, 10.0 + HistoGA[i] + rx * rx / (masks.Count) * j);
                 }
                 GL.End();
 
@@ -224,7 +243,7 @@ namespace testmediasmall
                 GL.Begin(PrimitiveType.LineStrip);
                 for (int i = 0; i < HistoBA.Length; ++i)
                 {
-                    GL.Vertex2(i, 10.0 + HistoBA[i] + rx * rx / (masks.Count) * m);
+                    GL.Vertex2(i, 10.0 + HistoBA[i] + rx * rx / (masks.Count) * j);
                 }
                 GL.End();
 
@@ -246,9 +265,12 @@ namespace testmediasmall
                     );
                 }
             }
-
+            //Console.WriteLine(avgb_index);
+            //histo_writer.Write(avgb_index);
             histo_writer.WriteLine(); //move to next line for each frame update  
 
+            /*
+            //convert float to bytes for histogram 
             foreach (float histoVal in HistoRA)
             {
                 HistoRA_byte = BitConverter.GetBytes(histoVal);
@@ -261,8 +283,8 @@ namespace testmediasmall
             {
                 HistoBA_byte = BitConverter.GetBytes(histoVal);
             }
+            */
         }
-
     }
 
     public class RGBHisto

@@ -1,5 +1,0 @@
-C:\Users\lezhi\Projects\quantitative_aesthetics\eyetracking\EyeTrackTobii\bin\Release\eyetrack.exe.config
-C:\Users\lezhi\Projects\quantitative_aesthetics\eyetracking\EyeTrackTobii\obj\x86\Release\eyetrack.csprojResolveAssemblyReference.cache
-C:\Users\lezhi\Projects\quantitative_aesthetics\eyetracking\EyeTrackTobii\obj\x86\Release\eyetrack.MainWindowForm.resources
-C:\Users\lezhi\Projects\quantitative_aesthetics\eyetracking\EyeTrackTobii\obj\x86\Release\eyetrack.Properties.Resources.resources
-C:\Users\lezhi\Projects\quantitative_aesthetics\eyetracking\EyeTrackTobii\obj\x86\Release\eyetrack.csproj.GenerateResource.Cache

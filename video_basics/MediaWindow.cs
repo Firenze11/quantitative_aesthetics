@@ -17,12 +17,14 @@ namespace testmediasmall
 {
     public class VFrame
     {
-        //public ColorAnalysis RGBColor = new ColorAnalysis();
-        
         public byte[, , ] frame_pix_data = null;
-        public double avgb = 0.0;   //qualifier
-
-       }
+        //qualifiers
+        public double avgr = 0.0;
+        public double avgg = 0.0;
+        public double avgb = 0.0;
+        public double totalMovement = 0.0;
+        public double domiHue = 0.0; //dominant Hue
+    }
 
     public class MediaWindow
     {
@@ -57,7 +59,7 @@ namespace testmediasmall
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             
             //...use video
-            Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi\_testVideo2.avi");
+            Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi_old\_testVideo.avi");
             Video.SetResolution(120, 80);
 
             sw = new StreamWriter(@"frame_info.csv");
@@ -70,7 +72,7 @@ namespace testmediasmall
         }
 
         public bool playbackmode=false;
-        public int maxframes = 100;
+        public int maxframes = 200;
 
         public int cframe=0;    //current frame
 
@@ -79,8 +81,13 @@ namespace testmediasmall
 
         public int sorter(VFrame a, VFrame b)
         {
-            return a.avgb.CompareTo(b.avgb);
+            //return a.avgr.CompareTo(b.avgr);
+            //return a.avgg.CompareTo(b.avgg);
+            //return a.avgb.CompareTo(b.avgb);
+            return a.totalMovement.CompareTo(b.totalMovement);
+            //return a.domiHue.CompareTo(b.domiHue);
         }
+
         //animation function. This contains code executed 20 times per second.
         public void OnFrameUpdate()
         {
@@ -88,15 +95,8 @@ namespace testmediasmall
             if (Vframe_repository.Count >= maxframes && !playbackmode)
             {
                 playbackmode = true;
-
-                //re-sorting ----------------------edit!
-                Random rnd=new Random();
-                foreach (VFrame vf in Vframe_repository)
-                {
-                    vf.avgb = rnd.NextDouble();
-                }
-
                 Vframe_repository.Sort(sorter);
+
             }
 
             if (playbackmode)
@@ -109,10 +109,9 @@ namespace testmediasmall
                 GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
                 GL.RasterPos2(0.0, 0.0);
-                GL.PixelZoom((float)Width / rx, (float)Height/ ry);
+                GL.PixelZoom((float) Width / rx, (float) Height/ ry);
                 GL.DrawPixels(rx, ry, PixelFormat.Bgr, PixelType.UnsignedByte, Vframe_repository[cframe].frame_pix_data);
                 //no alpha here! 
-
                 cframe++;
                 if (cframe >= Vframe_repository.Count) cframe = 0;
             }
@@ -126,8 +125,8 @@ namespace testmediasmall
                 if (Video.NeedUpdate) Video.UpdateFrame(true);
 
                 VideoPixel[,] px = Video.Pixels;
-                 rx = Video.ResX;
-                 ry = Video.ResY;
+                rx = Video.ResX;
+                ry = Video.ResY;
 
                 //GL.RasterPos2()
                 //GL.PixelZoom()
@@ -163,14 +162,13 @@ namespace testmediasmall
                 }
                 */
 
-
                 for (int j = 0; j < ry; ++j)
                 {
                     for (int i = 0; i < rx; ++i)
                     {
                         //GL.PointSize((float)(1.0 + Video.Pixels[j, i].V * 20.0));
                         GL.PointSize((float)(rx));
-                        GL.Color4(Video.Pixels[j, i].R, Video.Pixels[j, i].G, Video.Pixels[j, i].B, 1.0);
+                        GL.Color4(px[j, i].R, px[j, i].G, px[j, i].B, 1.0);
                         GL.Begin(PrimitiveType.Points);
                         GL.Vertex2(i, j);
                         GL.End();
@@ -179,18 +177,16 @@ namespace testmediasmall
                         //GL.Begin(PrimitiveType.LineStrip);
 
                         GL.End();
-
-
                         //GL.DrawPixels(2*rx, 2*ry, PixelFormat.Rgba, PixelType.Byte, );
 
                         //stream writer
                         sw.Write(frameNumber
                             + "," + j
                             + "," + i
-                            + "," + Video.Pixels[j, i].R
-                            + "," + Video.Pixels[j, i].G
-                            + "," + Video.Pixels[j, i].B
-                            + "," + Video.Pixels[j, i].V
+                            + "," + px[j, i].R
+                            + "," + px[j, i].G
+                            + "," + px[j, i].B
+                            + "," + px[j, i].V
                             + ","
                             //==================================also get alpha!!
                             );
@@ -215,6 +211,24 @@ namespace testmediasmall
                         }*/
                     }
                 }
+
+                //optical flow
+                double totalMovement = 0.0;
+                for (int j = 0; j < ry; ++j)
+                {
+                    for (int i = 0; i < rx; ++i)
+                    {
+                        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
+                        GL.PointSize((float)(diff * 50.0));
+                        GL.Color4(1.0, 0.0, 0.0, 0.5);
+                        GL.Begin(PrimitiveType.Points);
+                        GL.Vertex2(i, j);
+                        GL.End();
+
+                        totalMovement += diff;
+                    }
+                }
+
                 sw.WriteLine();
                 Console.Write(frameNumber + ", ");
                 frameNumber++;
@@ -222,16 +236,41 @@ namespace testmediasmall
                 RGBColor.FrameUpdate(px, rx, ry);
 
                 VFrame vf = new VFrame();
-                vf.frame_pix_data = (byte[, ,])RGBColor.imgdataBGR.Clone();/////////////////////////////////////////////////////////////
-                /*for (int i =0; i<RGBColor.maskNum; i++){
-                    vf.frame_qualifier[i,0] = RGBColor.HistoRA_byte;
-                    vf.frame_qualifier[i,1] = RGBColor.HistoGA_byte;
-                    vf.frame_qualifier[i, 2] = RGBColor.HistoBA_byte;
-                }*/
-                //Vframe_repository
+                //vf.frame_pix_data = (byte[, ,])RGBColor.imgdataBGR.Clone();
+                int j2;
+                vf.frame_pix_data = new byte[ry,rx ,3];
+                for (int k = 0; k < 3; k++)
+                {
+                    for (int j = 0; j < ry; j++)
+                    {
+                        j2 = ry - j - 1;
+                        for (int i = 0; i < rx; i++)
+                        {
+
+                            vf.frame_pix_data[j, i, k] = RGBColor.imgdataBGR[j2, i, k];
+                        }
+                    }
+                }
+
+                vf.avgr = RGBColor.avgr;
+                vf.avgg = RGBColor.avgg;
+                vf.avgb = RGBColor.avgb;
+                //////////////////////////////////////////////////////////////////////////////color palette code
+                ColorQuant ColorQuantizer = new ColorQuant();
+                Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 3);///////////////
+                Colormap DiffColorMap = ColorQuantizer.SortByDifference(initialCMap);
+                Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);
+                vf.domiHue = ColorQuantizer.TranslateHSV(initialCMap[0])[0];
+                ////////////////////////////////////////////////////////////////////////end of color palette cod
+                //Console.WriteLine(vf.domiHue);
+
+                
+                vf.totalMovement = totalMovement;
+
                 Vframe_repository.Add(vf);
+                //Console.WriteLine(RGBColor.avgb);
 
-
+                //checking past 20 frames
                 GL.PixelZoom(0.5f, 0.5f);
                 for (int k = 0; k < 20 && k < Vframe_repository.Count; ++k)
                 {
@@ -240,6 +279,7 @@ namespace testmediasmall
                     GL.DrawPixels(rx, ry, PixelFormat.Bgr, PixelType.UnsignedByte, f.frame_pix_data);
                 }
 
+                
                 //for splitting screen
                 /*
                 int nx = 4;

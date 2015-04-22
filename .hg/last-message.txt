@@ -1,1 +1,1 @@
-implemented shuffling of video frames
+sorters added for RG and optical flow. completes RGB, hue, and optical flow sorters

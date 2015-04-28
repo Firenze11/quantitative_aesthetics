@@ -77,3 +77,4 @@ C:\Users\lezhi\Projects\quantitative_aesthetics\video_basics\bin\Release\Emgu.CV
 C:\Users\lezhi\Projects\quantitative_aesthetics\video_basics\bin\Release\Emgu.Util.pdb
 C:\Users\lezhi\Projects\quantitative_aesthetics\video_basics\bin\Release\Emgu.Util.xml
 C:\Users\lezhi\Projects\quantitative_aesthetics\video_basics\testmediasmall.exe.config
+C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics\obj\x86\Release\testmediasmall.csprojResolveAssemblyReference.cache

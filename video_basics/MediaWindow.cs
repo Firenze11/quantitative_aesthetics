@@ -61,7 +61,7 @@ namespace testmediasmall
             //...use video
             //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi_old\_testVideo.avi");
             //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi_old\_testVideo2.avi");
-            Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi_old\_testVideo3.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi_old\_testVideo3.avi");
             Video.SetResolution(120, 80);
 
             sw = new StreamWriter(@"frame_info.csv");

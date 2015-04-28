@@ -34,6 +34,13 @@ namespace testmediasmall
         {
             Add(new RGBA_Quad(r,g,b,255, n));
         }
+
+        public Colormap CloneMe()
+        {
+            Colormap cmap = new Colormap();
+            cmap.AddRange(this);
+            return cmap;
+        }
     }
 
     public class PIX
@@ -336,12 +343,12 @@ namespace testmediasmall
         }*/
         public Colormap SortByHue (Colormap cmap)
         {
-            List<RGBA_Quad> sortedmap = (List < RGBA_Quad >) cmap;
-            for (int i = 0; i < sortedmap.Count - 1; i++) //swap sorting
-            {
-                sortedmap.Sort((x, y) => TranslateHSV(x)[0].CompareTo(TranslateHSV(y)[0]));
-            }
-            return (Colormap)sortedmap;
+            Colormap sortedmap = cmap.CloneMe();
+
+            sortedmap.Sort((x, y) => (TranslateHSV(x)[0])
+                                    .CompareTo(TranslateHSV(y)[0]));
+
+            return sortedmap;
         }
         private double Difference(RGBA_Quad c, double[] _avg)
         {
@@ -352,7 +359,7 @@ namespace testmediasmall
         }
         public Colormap SortByDifference(Colormap cmap)
         {
-            List<RGBA_Quad> sortedmap = cmap;
+            Colormap sortedmap = cmap.CloneMe();
             double[] diffs = new double[sortedmap.Count];
             double[] avg = new double[3];
 
@@ -368,7 +375,7 @@ namespace testmediasmall
             }
 
             sortedmap.Sort((x, y) => Difference(y,avg).CompareTo(Difference(x,avg)));
-            return (Colormap) sortedmap;
+            return  sortedmap;
         }
         //------------------------------------------------------------------------end of sorting code
 

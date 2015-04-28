@@ -59,7 +59,9 @@ namespace testmediasmall
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             
             //...use video
-            Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi_old\_testVideo.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi_old\_testVideo.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi_old\_testVideo2.avi");
+            Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\_video_basics_lezhi_old\_testVideo3.avi");
             Video.SetResolution(120, 80);
 
             sw = new StreamWriter(@"frame_info.csv");
@@ -79,13 +81,22 @@ namespace testmediasmall
         public int rx = 0;
         public int ry = 0;
 
+        //public bool optFlow = false;
+
         public int sorter(VFrame a, VFrame b)
         {
             //return a.avgr.CompareTo(b.avgr);
             //return a.avgg.CompareTo(b.avgg);
             //return a.avgb.CompareTo(b.avgb);
-            return a.totalMovement.CompareTo(b.totalMovement);
-            //return a.domiHue.CompareTo(b.domiHue);
+            //return a.totalMovement.CompareTo(b.totalMovement);
+            return a.domiHue.CompareTo(b.domiHue);
+            
+            
+            //double aa = a.domiHue + a.totalMovement*0.1;
+            //double bb = b.domiHue + b.totalMovement*0.1;
+
+            //return aa.CompareTo(bb);
+
         }
 
         //animation function. This contains code executed 20 times per second.
@@ -225,7 +236,12 @@ namespace testmediasmall
                         GL.Vertex2(i, j);
                         GL.End();
 
+                        //angle 
+                        double optFlowAngle = Math.Atan2(px[j, i].mx, px[j, i].my);
+                       // optFlowAngle +=  
+
                         totalMovement += diff;
+
                     }
                 }
 
@@ -257,10 +273,11 @@ namespace testmediasmall
                 vf.avgb = RGBColor.avgb;
                 //////////////////////////////////////////////////////////////////////////////color palette code
                 ColorQuant ColorQuantizer = new ColorQuant();
-                Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 3);///////////////
+                Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 3);
                 Colormap DiffColorMap = ColorQuantizer.SortByDifference(initialCMap);
                 Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);
-                vf.domiHue = ColorQuantizer.TranslateHSV(initialCMap[0])[0];
+                var a = ColorQuantizer.TranslateHSV(initialCMap[0]);
+                vf.domiHue = a[0];
                 ////////////////////////////////////////////////////////////////////////end of color palette cod
                 //Console.WriteLine(vf.domiHue);
 

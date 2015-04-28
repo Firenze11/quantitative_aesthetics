@@ -25,6 +25,13 @@ namespace testmediasmall
         Image<Gray, byte> imgG;
         Image<Gray, byte> imgB;
 
+        Image<Gray, byte> imgR_withMask;
+        Image<Gray, byte> imgG_withMask;
+        Image<Gray, byte> imgB_withMask;
+        List<Image<Gray,byte>> imgR_masks;
+        List<Image<Gray, byte>> imgG_masks;
+        List<Image<Gray, byte>> imgB_masks;
+
         //RGB and V values for each pixel 
         Image<Bgr, byte> bgr;
         byte[, ,] imgdata;
@@ -36,9 +43,6 @@ namespace testmediasmall
         RGBHisto HistoR = new RGBHisto();
         RGBHisto HistoG = new RGBHisto();
         RGBHisto HistoB = new RGBHisto();
-        RGBHisto HistoH = new RGBHisto();
-        RGBHisto HistoS = new RGBHisto();
-        RGBHisto HistoV = new RGBHisto();
 
         //histogram values for each mask
         float[] HistoRA;
@@ -48,7 +52,11 @@ namespace testmediasmall
         public float avgr = 0;
         public float avgg = 0;
         public float avgb = 0;
-            
+
+        public float avgr_index = 0;
+        public float avgg_index = 0;
+        public float avgb_index = 0;
+
         //public byte[] HistoRA_byte;
         //public byte[] HistoGA_byte;
         //public byte[] HistoBA_byte;
@@ -164,6 +172,14 @@ namespace testmediasmall
                 imgR = new Image<Gray, byte>(imgdataR);
                 imgG = new Image<Gray, byte>(imgdataG);
                 imgB = new Image<Gray, byte>(imgdataB);
+
+                imgR_withMask = new Image<Gray, byte>(imgdataR).Copy();
+                imgG_withMask = new Image<Gray, byte>(imgdataG).Copy();
+                imgB_withMask = new Image<Gray, byte>(imgdataB).Copy();
+
+                //imgR_masks = new List<Image<Gray, byte>>();
+                //imgG_masks = new List<Image<Gray, byte>>();
+                //imgB_masks = new List<Image<Gray, byte>>();
             }
             else
             {
@@ -174,6 +190,16 @@ namespace testmediasmall
                 imgR.Data = imgdataR;
                 imgG.Data = imgdataG;
                 imgB.Data = imgdataB;
+                ///////////////////////////////////////////////////////////////////////////////////////////////////
+                for(int i = 0; i < masks.Count; i++){
+                    imgR_withMask = imgR.Copy(masks[i]);
+                    imgG_withMask = imgG.Copy(masks[i]);
+                    imgB_withMask= imgB.Copy(masks[i]);
+
+                    //imgR_masks.Add(imgR_withMask);
+                    //imgG_masks.Add(imgR_withMask);
+                    //imgB_masks.Add(imgR_withMask);
+                }
             }
 
             //.................................................................................HSV stuff
@@ -204,17 +230,19 @@ namespace testmediasmall
                 HistoBA = HistoB.CalculateRGBHistogram(imgB, masks[j]);
 
                 //get highest bin index
-                /*avgr = HistoRA.Max();
-                avgg = HistoGA.Max();
-                avgb = HistoBA.Max();
-                avgr_index = HistoRA.ToList().IndexOf(avgr);
-                avgg_index = HistoGA.ToList().IndexOf(avgg);
-                avgb_index = HistoBA.ToList().IndexOf(avgb);
+               /* foreach (int i in HistoR.binNum) {
+                    avgr = HistoRA.count();
+                    avgg = HistoGA.Max();
+                    avgb = HistoBA.Max();
+                
+                    avgr_index = HistoRA.ToList().IndexOf(avgr);
+                    avgg_index = HistoGA.ToList().IndexOf(avgg);
+                    avgb_index = HistoBA.ToList().IndexOf(avgb);
 
-                avgb_index = avgb_index - (avgg_index + avgr_index) / 2;
+                    avgb_index = avgb_index - (avgg_index + avgr_index) / 2;
+                }                
+
                 */
-
-
                 //float[] HistSA = HistoH.CalculateRGBHistogram(imgHue, masks[m]);
 
                 //render histogram on screen
@@ -289,7 +317,7 @@ namespace testmediasmall
 
     public class RGBHisto
     {
-        public int binNum = 10;
+        public int binNum = 256;
         public int range = 256;
         DenseHistogram Histogram;
 

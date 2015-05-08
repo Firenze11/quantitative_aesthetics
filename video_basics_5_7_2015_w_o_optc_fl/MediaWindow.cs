@@ -178,6 +178,9 @@ namespace testmediasmall
                 GL.LoadIdentity();
                 GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
+                //if dpoint has stayed in a certain location for an amount of time
+                //then draw pixels with a zoom from that location 
+
                 GL.RasterPos2(0.0, 0.0);
                 GL.PixelZoom((float)Width / rx * (frameNumber-190) * 0.1f, (float)Height / ry * (frameNumber-190) * 0.1f);
                 GL.DrawPixels(rx, ry, PixelFormat.Bgr, PixelType.UnsignedByte, Vframe_repository[cframe].frame_pix_data);

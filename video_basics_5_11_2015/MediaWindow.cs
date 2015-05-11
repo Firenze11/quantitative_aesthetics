@@ -14,6 +14,7 @@ using Emgu.Util;
 using Emgu.CV.Structure;
 
 //using Tobii.Gaze.Core;
+//testing github
 
 namespace testmediasmall
 {
@@ -29,6 +30,10 @@ namespace testmediasmall
         public RGBHisto HistoR;
         public RGBHisto HistoG;
         public RGBHisto HistoB;
+
+        public double test;
+
+
     }
 
     public class MediaWindow

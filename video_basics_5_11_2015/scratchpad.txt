@@ -1,0 +1,425 @@
+﻿public void Initialize()
+        {
+            //these are just initialization parameters for the viewer object.
+            //viewer distance from target point [initialy form 0,0,0]
+            /*viewer.Distance = 5.0;
+            //clipping plane near to the viewer [anything closer to the viewer than 0. will be clipped]
+            viewer.NearPlane = 0.1;
+            //far clipping plane. Anything further than 600.0 units will be invisible
+            viewer.FarPlane = 600.0;*/
+
+
+            MediaIO.VideoIn.StartCamera(320, 240);
+            MediaIO.VideoIn.SetResolution(160, 120);
+        }
+
+        
+
+        public void OnFrameUpdate()
+        {
+            GL.ClearColor(Color.White);     //set the background colour to white
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit); //clear both the colour and depth buffers
+
+            viewer.Apply(MouseX, MouseY);
+
+
+            //Enable the first light in OpenGL
+            GL.Enable(EnableCap.Light0);
+            //Set the light position along the direction of the viewer
+            GL.Light(LightName.Light0, LightParameter.Position, new Vector4((float)viewer.Vpoint.X * 10.0f, (float)viewer.Vpoint.Y * 10.0f, (float)viewer.Vpoint.Z * 10.0f, 1.0f));
+            //set the colout of the light 0 to a white
+            GL.Light(LightName.Light0, LightParameter.Diffuse, new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
+            //enable depth testing. That is when drawing objects the ones that are closer to the viewer will hide the ones further in the back
+            GL.Enable(EnableCap.DepthTest);
+            rfile.RenderRhinoObjects();
+
+            //disable lighting and depth testing for all subsequent drawing
+            GL.Disable(EnableCap.Lighting);
+            GL.Disable(EnableCap.DepthTest);
+
+            GL.MatrixMode(MatrixMode.Projection);//Start modification of the projection matrix
+            GL.LoadIdentity();                  //reset the rojection matrix to the identity matrix 
+            GL.Ortho(0.0, Width, 0.0, Height, -10.0, 100.0); //Set the projeciton matrix to an orthographic projection that matches the dimensions of the viewport
+            GL.MatrixMode(MatrixMode.Modelview); //Start modification of the model matrix
+            GL.LoadIdentity();                  //Set the model view matrix to the identity [that is the viewer is going to be looking down and the global x axsi will be aligned with the screen X axis and the global Y axis will be aligned with the screen Y axis
+
+
+
+            //this function is called 30 times per second and here you should do all real time processing and drawing
+            if (!MediaIO.VideoIn.IsVideoCapturing) return; //Exit if a camera is not present
+            MediaIO.VideoIn.UpdateFrame(true);
+
+            VideoPixel[,] px = MediaIO.VideoIn.Pixels;
+            int rx = MediaIO.VideoIn.ResX;
+            int ry = MediaIO.VideoIn.ResY;
+
+
+            GL.MatrixMode(MatrixMode.Projection);//Start modification of the projection matrix
+            GL.LoadIdentity();                  //reset the rojection matrix to the identity matrix 
+            GL.Ortho(0.0, rx, 0.0, ry, -10.0, 100.0); //Set the projeciton matrix to an orthographic projection that matches the dimensions of the viewport
+            GL.MatrixMode(MatrixMode.Modelview); //Start modification of the model matrix
+            GL.LoadIdentity();                  //Set the model view matrix to the identity [that is the viewer is going to be looking down and the global x axsi will be aligned with the screen X axis and the global Y axis will be aligned with the screen Y axis
+
+
+            videoimage.FromVideo();
+            videoimage.Draw(Width * 0.5 - 20.0, 0.0, 40.0, 30.0, 1.0);
+
+            for (int j = 0; j < ry; ++j)
+            {
+                for (int i = 0; i < rx; ++i)
+                {
+                    GL.PointSize(13.0f);
+                    GL.Begin(BeginMode.Points);
+                    GL.Color4(px[j, i].R, px[j, i].G, px[j, i].B, 1.0);
+                    GL.Vertex2(i, j );
+                    GL.End();
+                }
+            }
+
+            //B.	Drawing with OpenGL
+
+            //a.	Draw Pixels as Points.......................................................
+            /* for (int j = 0; j < ry; ++j)
+             {
+                 for (int i = 0; i < rx; ++i)
+                 {
+                     GL.PointSize(3.0f);
+                     GL.Begin(BeginMode.Points);
+                     GL.Color4(px[j, i].R, px[j, i].G, px[j, i].B, 1.0);
+                     GL.Vertex2(i*4, j*4);
+                     GL.End();
+                 }
+             }*/
+
+            //1.	Draw Different size points.......................................................
+            /*for (int j = 0; j < ry; ++j)
+            {
+                for (int i = 0; i < rx; ++i)
+                {
+                    GL.PointSize((float)(px[j, i].V*15.0));
+                    GL.Begin(BeginMode.Points);
+                    GL.Color4(0.0, 0.0, 0.0, 0.9);
+                    GL.Vertex2(i * 5, j * 5);
+                    GL.End();
+                }
+            }*/
+            //2.	Draw Every Second pixel.......................................................
+            /*for (int j = 0; j < ry; j+=2)
+            {
+                for (int i = 0; i < rx; i+=2)
+                {
+                    GL.PointSize((float)(px[j, i].V * 15.0));
+                    GL.Begin(BeginMode.Points);
+                    GL.Color4(0.0, 0.0, 0.0, 0.9);
+                    GL.Vertex2(i * 5, j * 5);
+                    GL.End();
+                }
+            }*/
+            //3.	Draw Patterned Pixels.......................................................
+            /*for (int j = 0; j < ry; ++j)
+            {
+                for (int i = 0; i < rx; ++i)
+                {
+                    if ((j + i) % 3 == 0 || (j-i)%3==0 ) continue;
+                    GL.PointSize((float)(px[j, i].V * 15.0));
+                    GL.Begin(BeginMode.Points);
+                    GL.Color4(0.0, 0.0, 0.0, 0.9);
+                    GL.Vertex2(i * 5, j * 5);
+                    GL.End();
+                }
+            }*/
+            //4.	[ADV] Make a Draw Point from Pixel function.......................................................
+            /*for (int j = 0; j < ry; ++j)
+            {
+                for (int i = 0; i < rx; ++i)
+                {
+                    DrawPixel(px[j, i], i * 5, j * 5);
+                }
+            }*/
+            //5.	[ADV] Draw images.......................................................
+            /*for (int j = 0; j < ry; j += 5)
+            {
+                for (int i = 0; i < rx; i += 5)
+                {
+                    videoimage.Draw(i * 5, j * 5, 25.0, 25.0, 1.0 - px[j, i].V);
+                }
+            }*/
+            //6.	[ADV] Draw Random Points.......................................................
+            /*Random rn = new Random();  //Discrete noise
+            for (int k = 0; k < 10000; ++k)
+            {
+                int i = rn.Next() % rx;
+                int j = rn.Next() % ry;
+                DrawPixel(px[j, i], i * 5, j * 5);
+            }*/
+
+            /*Random rn = new Random();  //Continuous noise
+            for (int k = 0; k < 10000; ++k)
+            {
+                double i = rn.NextDouble() * (rx - 1.0);
+                double j = rn.NextDouble() * (ry - 1.0);
+                DrawPixel(px[(int)j, (int)i], i * 5, j * 5);
+            }*/
+            //b.	Draw Gradient Lines.......................................................
+            /*GL.LineWidth(1.0f);
+            for (int j = 0; j < ry; ++j)
+            {
+                for (int i = 0; i < rx; ++i)
+                {
+                    double x = i * 5.0;
+                    double y = j * 5.0;
+                    GL.Begin(BeginMode.Lines);
+                    GL.Color4(0.0, 0.0, 0.0, 1.0);
+                    GL.Vertex2(x, y);
+                    GL.Color4(0.0, 0.0, 0.0, 0.0);
+                    GL.Vertex2(x + px[j, i].gx * 400.0, y + px[j, i].gy * 400.0);
+                    GL.End();
+                }
+            }*/
+            //1.	Draw Contour Lines.......................................................
+            /* GL.LineWidth(1.0f);
+             for (int j = 0; j < ry; ++j)
+             {
+                 for (int i = 0; i < rx; ++i)
+                 {
+                     double x = i * 5.0;
+                     double y = j * 5.0;
+                     GL.Begin(BeginMode.Lines);
+                     GL.Color4(0.0, 0.0, 0.0, 1.0);
+                     GL.Vertex2(x, y);
+                     GL.Color4(0.0, 0.0, 0.0, 0.0);
+                     GL.Vertex2(x - px[j, i].gy * 400.0, y + px[j, i].gx * 400.0);
+                     GL.End();
+                 }
+             }*/
+            //c.	Draw optical Flow lines.......................................................
+            /* GL.LineWidth(1.0f);
+             for (int j = 0; j < ry; ++j)
+             {
+                 for (int i = 0; i < rx; ++i)
+                 {
+                     double x = i * 5.0;
+                     double y = j * 5.0;
+                     GL.Begin(BeginMode.Lines);
+                     GL.Color4(0.0, 0.0, 0.0, 1.0);
+                     GL.Vertex2(x, y);
+                     GL.Color4(0.0, 0.0, 0.0, 0.0);
+                     GL.Vertex2(x + px[j, i].mx * 640.0, y + px[j, i].my * 640.0);
+                     GL.End();
+                 }
+             }*/
+            //d.	[ADV] Draw Rotated Squares Aligned with Gradient.......................................................
+            /* GL.LineWidth(1.0f);
+             for (int j = 0; j < ry; j+=3)
+             {
+                 for (int i = 0; i < rx; i+=3)
+                 {
+                     double x = i * 5.0;
+                     double y = j * 5.0;
+                     double a = Math.Atan2(px[j, i].gx, px[j, i].gy)*180.0/Math.PI;
+                     double sd=px[j,i].V*12.0;
+                     GL.Color4(0.0, 0.0, 0.0, 0.5);
+
+                     GL.PushMatrix();
+                     GL.Translate(x, y, 0.0);
+                     GL.Rotate(a, Vector3d.UnitZ);
+                     GL.Begin(BeginMode.LineStrip);
+                    
+                     GL.Vertex2(-sd, -sd);
+                     GL.Vertex2( sd, -sd);
+                     GL.Vertex2( sd,  sd);
+                     GL.Vertex2(-sd,  sd);
+                     GL.Vertex2(-sd, -sd);
+
+                     GL.End();
+                     GL.PopMatrix();
+                 }
+             }*/
+
+        }
+
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Drawing;
+using System.Windows.Forms;
+
+using C_sawapan_media;
+
+using OpenTK.Graphics;
+using OpenTK.Graphics.OpenGL;
+
+
+namespace testmediasmall
+{
+    public class MediaWindow
+    {
+        public int Width = 0;
+        public int Height = 0;
+        public double MouseX = 0.0;
+        public double MouseY = 0.0;
+
+
+        public void Initialize()
+        {
+            //MediaIO.VideoIn.StartCamera();
+            //MediaIO.VideoIn.StartVideoFile(@"C:\external_documents\SYNC\presentations\graphemes_tensile.avi");
+            MediaIO.SoundIn.Start();
+            
+            snd = MediaIO.SoundOut.AddEmptyFreqSample(0.1, 0.1);
+            //snd.SetNote(49.0, 0.3);
+            //snd.SetFreq(440.0, 0.3);
+            //snd.SetFreq(600.0, 0.5);
+           // bool res=snd.BuildSoundSample();
+
+            swav = MediaIO.SoundOut.OpenWaveFile(@"C:\external_documents\svnC++\testmediasmall\ChordPiano.wav");
+            double[,] d = swav.GetWaveFormD();
+
+            for (int i = 0; i < d.GetLength(0); ++i)
+            {
+                d[i, 0] =  0.1 * Math.Cos((double)i * 0.2)*Math.Cos((Double)i*0.002);
+                d[i, 1] = 0.1 * Math.Sin((double)i * 0.4);
+            }
+
+            swav.SetWaveFormD(d);
+
+            swav.Play(true);
+            snd.Play(false);
+
+            //Rhino.RhinoDoc.SelectObjects += new EventHandler<Rhino.DocObjects.RhinoObjectSelectionEventArgs>(RhinoDoc_SelectObjects);
+        }
+
+        SoundSampleFreq snd;
+        SoundSample swav;
+
+        double motx = 0.0;
+        double moty = 0.0;
+
+        public void OnFrameUpdate()
+        {
+            GL.ClearColor(Color.SkyBlue);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
+            GL.Ortho(0.0, Width, 0.0, Height, -10.0, 100.0);
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.LoadIdentity();
+
+
+            if (MediaIO.VideoIn.IsVideoCapturing)
+            {
+                MediaIO.VideoIn.UpdateFrame();
+
+                GL.PointSize(10.0f);
+                GL.Begin(BeginMode.Points);
+                foreach (VideoPixel px in MediaIO.VideoIn.Pixels)
+                {
+                    GL.Color4(Math.Abs(px.mx) * 10.0, Math.Abs(px.my) * 10.0, px.V, 1.0);
+                    GL.Vertex2(px.nx * Width, px.ny * Height);
+                }
+                GL.End();
+
+                double cenx = 0.0;
+                double ceny = 0.0;
+                double total = 0.0;
+                foreach (VideoPixel px in MediaIO.VideoIn.Pixels)
+                {
+                    double dt = Math.Abs(px.V - px.V0);//px.mx * px.mx + px.my * px.my;// 
+                    dt = dt * dt*dt;
+                    cenx += px.nx * dt;
+                    ceny += px.ny * dt;
+                    total += dt;
+                }
+
+                if (total != 0.0)
+                {
+                    cenx /= total;
+                    ceny /= total;
+                }
+
+                motx = motx * 0.9 + cenx * 0.1;
+                moty = moty * 0.9 + ceny * 0.1;
+
+                GL.Color4(1.0, 0.0, 0.0, 1.0);
+                GL.PointSize(10.0f);
+                GL.Begin(BeginMode.Points);
+                GL.Vertex2(motx * Width, moty * Height);
+                GL.End();
+
+                if (!snd.IsPlaying)
+                {
+                    Random rr = new Random();
+                    snd.SilenceAllFrequencies();
+
+                    double nt = Math.Round(37+moty * (88.0-37.0));
+                    double fr = MediaIO.SoundIn.NoteToFrequency(nt);
+                    snd.SetNote(nt, 0.1, rr.NextDouble());
+                    snd.SetNote(nt-12.0, 0.05, rr.NextDouble());
+                    snd.SetNote(nt+12.0, 0.07, rr.NextDouble());
+
+                    double nt2 = Math.Round(37 + motx * (88.0 - 37.0));
+                    snd.SetNote(nt2, 0.1, rr.NextDouble());
+                    snd.SetNote(nt2 - 12.0, 0.05, rr.NextDouble());
+                    snd.SetNote(nt2 + 12.0, 0.07, rr.NextDouble());
+
+                    bool res = snd.BuildSoundSample();
+                    snd.Play(false);
+                }
+
+            }
+
+            if (MediaIO.SoundIn.Listening)
+            {
+                MediaIO.SoundIn.GetLatestSample();
+                GL.Color4(1.0, 1.0, 0.0, 1.0);
+                GL.Begin(BeginMode.LineStrip);
+                for (int i = 0; i < MediaIO.SoundIn.WaveLeft.Count; ++i)
+                {
+                    GL.Vertex2(i, 260.0+MediaIO.SoundIn.WaveLeft[i] * 260.0);
+                }
+                GL.End();
+
+                GL.Color4(0.0, 1.0, 1.0, 1.0);
+                GL.Begin(BeginMode.LineStrip);
+                for (int i = 0; i < MediaIO.SoundIn.WaveLeft.Count; ++i)
+                {
+                    GL.Vertex2(i, 260.0+MediaIO.SoundIn.WaveRight[i] * 260.0);
+                }
+                GL.End();
+
+                GL.Color4(1.0, 1.0, 1.0, 1.0);
+                GL.Begin(BeginMode.LineStrip);
+                for (int i = 0; i < MediaIO.SoundIn.Frequencies.Count; ++i)
+                {
+                    GL.Vertex2(i, 260.0 + (MediaIO.SoundIn.Frequencies[i].Volume / MediaIO.SoundIn.PeakFrequency.Volume) * 50.0);
+                }
+                GL.End();
+
+                double multip = 50.0 / MediaIO.SoundIn.PeakFrequency.Volume;
+
+     
+                GL.Color4(1.0, 0.0, 0.0, 1.0);
+                GL.Begin(BeginMode.LineStrip);
+                double maxnote = MediaIO.SoundIn.FrequencyToNote(MediaIO.SoundIn.MaxFrequencyHz);
+                for (double i = 0.0; i < maxnote; i += 1.0)
+                {
+                    double fband = MediaIO.SoundIn.NoteBandVolume(i, i+1);
+                    GL.Vertex2(i, 260.0 + fband * multip);
+                }
+                GL.End();
+                
+                
+            }
+
+        }
+
+
+    }
+}
+
+

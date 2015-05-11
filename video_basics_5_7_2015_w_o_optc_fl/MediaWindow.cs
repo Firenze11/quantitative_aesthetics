@@ -77,7 +77,7 @@ namespace testmediasmall
             //...using webcam inputs
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             //...use video
-            Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\video_basics_5_7_2015_w_o_optc_fl\_testVideo.avi");
+            Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics_5_7_2015_w_o_optc_fl\_testVideo.avi");
             Video.SetResolution(120, 80);
 
             sw = new StreamWriter(@"frame_111.csv");

@@ -165,12 +165,12 @@ namespace testmediasmall
 
             ////////////////////////////////////////////////////////////////////5.8
             gazeL.Add(dpointNorm);
-            if (gazeL.Count > 20) { gazeL.RemoveAt(0); }
+            if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
             if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
             else { gazeMedium = 0.7* gazeMedium + 0.3 * dpointNorm;  }
             double deviation = 0;
-
             int lastf = 50;
+
             if (gazeL.Count >= lastf)
             {
                 gazeMedium = new Vector3d();
@@ -251,7 +251,7 @@ namespace testmediasmall
                 }
 
                 //zoomMode false for testing blackout******************************************************************
-                zoomMode = false;
+                //zoomMode = false;
                 bool blackout = true;
                 
                 double zoomrate = 0.01;
@@ -318,8 +318,8 @@ namespace testmediasmall
 
                     //Vector3d dpointNorm = new Vector3d(rnd.Next(0, rx), rnd.Next(0, ry), 0.0);
                     //Vector3d dpointNorm = new Vector3d(rnd.Next(0, 5), rnd.Next(0, 5), 0.0);
-                    gazeL.Add(dpointNorm);
-                    if (gazeL.Count > 300) gazeL.RemoveAt(0);
+                    //gazeL.Add(dpointNorm);
+                    //if (gazeL.Count > 300) gazeL.RemoveAt(0);
 
                     //GL.Color4(1.0, 0.0, 0.0, 0.4);
                     //GL.Begin(PrimitiveType.Quads);

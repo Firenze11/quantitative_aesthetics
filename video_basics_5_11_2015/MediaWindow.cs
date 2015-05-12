@@ -84,7 +84,7 @@ namespace testmediasmall
             //...using webcam inputs
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             //...use video
-            Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics_5_7_2015_w_o_optc_fl\_testVideo.avi");
+            Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
 
             System.Threading.Thread.Sleep(500);
             Video.SetResolution(120, 80);

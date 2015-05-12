@@ -48,6 +48,7 @@ namespace testmediasmall
         //******************
         EyeHelper EyeTracker = new EyeHelperTOBII();/////////////////////////////////////////////////////////EYE TRACKER
         List<Vector3d> gazeL = new List<Vector3d>();/////////////////////////////////////////////////////////EYE GAZE LIST
+        double deviation = 0;
 
         List<VFrame> Vframe_repository = new List<VFrame>();
         ColorAnalysis RGBColor = new ColorAnalysis();
@@ -123,7 +124,7 @@ namespace testmediasmall
         }
 
         bool iszooming = false;
-        int zoomduration = 200;
+        int zoomduration = 120;
         int zoomcount = 0;
         //animation function. This contains code executed 20 times per second.
         public void OnFrameUpdate()
@@ -158,46 +159,41 @@ namespace testmediasmall
             Vector3d dpointNorm;
             dpointNorm = (lnorm + rnorm) * 0.5;
             Vector3d gazeMedium = new Vector3d();
+            Vector3d focus = new Vector3d();
 
             dpointNorm.Y = 1.0 - dpointNorm.Y;
             //.WriteLine(dpointNorm.X);
             //dpoint = (lgaze + rgaze) * 0.5;
+            deviation = 0;
 
             ////////////////////////////////////////////////////////////////////5.8
             gazeL.Add(dpointNorm);
             if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
             if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
-            else { gazeMedium = 0.7* gazeMedium + 0.3 * dpointNorm;  }
-            double deviation = 0;
-            int lastf = 50;
+            else { gazeMedium = 0.5* gazeMedium + 0.5 * dpointNorm;
+            }
+            int lastf = 12;
 
             if (gazeL.Count >= lastf)
             {
-                gazeMedium = new Vector3d();
                 for (int i = 0; i < lastf; i++)
                 {
-                    gazeMedium += gazeL[gazeL.Count-i-1];
+                    deviation += 100 * (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared;
+                    //Console.WriteLine(deviation);
                 }
-                gazeMedium *= (1.0 / (double)lastf);
-
-
-                for (int i = 0; i < lastf; i++)
-                {
-                    deviation += (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared;
-                }
-                deviation = Math.Sqrt(deviation) / (double)lastf;
-
+                //Console.WriteLine(deviation);
                 if (iszooming) //post fixation period lasts for zoomduration frames
                 {
                     zoomcount++;
-                    if (zoomcount >= zoomduration) iszooming = false;
+                    if (zoomcount >= zoomduration) { iszooming = false; }
                     //here write the code that is executed during the transition period [zoom, cut etc....]
-
                 }
-                else if (deviation < 5.0)
+                else if (deviation < 10.0)
                 {//deviation just dropped below threshold
+                    Console.WriteLine("zoom start");
                     zoomcount = 0;
                     iszooming = true;
+                    focus = new Vector3d((1.0 - gazeMedium.X) * rx, (1.0 - gazeMedium.Y) * ry, 0.0);
                 }
                 else
                 {//normal viewing period 
@@ -211,7 +207,7 @@ namespace testmediasmall
             else if (dpointNorm.X < 0.25) { num = 1; }
             else if (dpointNorm.X > 0.75) { num = 2; }
             else { num = 0; }
-            Console.WriteLine(num);
+            //Console.WriteLine(num);
 
             sw.WriteLine( num + "," + dpointNorm.X + "," + dpointNorm.Y+",");
             /////////////////////////////////////////////////////////////////////////////////END OF MATCH GAZE WITH MASK///
@@ -227,7 +223,6 @@ namespace testmediasmall
             {
                 cframe++;
                 if (cframe >= Vframe_repository.Count) cframe = 0;
-                bool zoomMode = false;
 
                 GL.ClearColor(1.0f, 0.6f, 0.6f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -243,28 +238,27 @@ namespace testmediasmall
                 //Vector3d focus = new Vector3d((1.0 - dpointNorm.X) * rx, (1.0 - dpointNorm.Y) * ry, 0.0);
                 
                 
-                Vector3d focus = new Vector3d();
-                if (deviation < 10) 
-                {
-                    zoomMode = true;
-                    focus = new Vector3d((1.0 - gazeMedium.X) * rx, (1.0 - gazeMedium.Y) * ry, 0.0);
-                }
 
                 //zoomMode false for testing blackout******************************************************************
-                //zoomMode = false;
                 bool blackout = true;
-                
-                double zoomrate = 0.01;
+                double zoomrate = 0.05;
 
-                byte[, ,] px = Vframe_repository[cframe].frame_pix_data;
-
+                byte[, ,] px = Vframe_repository[cframe].frame_pix_data;/////////////////////cframe
                 vbit.FromFrame(px);
 
-                double s = 2.0;
-                double zx=40.0;
-                double zy=25.0;
-
-                vbit.Draw(rx*0.5-zx*s, ry*0.5-zy*s, rx*s, ry*s, 1.0);
+                Console.WriteLine(iszooming);
+                if (iszooming)
+                {
+                    double s = 1.0 + zoomrate * cframe;
+                    double zx=40.0;
+                    double zy=25.0;
+                    vbit.Draw(rx*0.5-zx*s, ry*0.5-zy*s, rx*s, ry*s, 1.0);
+                }
+                else
+                {
+                    vbit.Draw(0.0, 0.0, rx, ry, 1.0);
+                }
+                
 
                /* for (int j = 0; j < ry; ++j)
                 {

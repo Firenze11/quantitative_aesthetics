@@ -99,7 +99,7 @@ namespace testmediasmall
         }
 
         public bool playbackmode = false;
-        public int maxframes = 150;
+        public int maxframes = 50;
         public int cframe = 0;    //current frame
 
         public int rx = 0;
@@ -126,6 +126,8 @@ namespace testmediasmall
         bool iszooming = false;
         int zoomduration = 120;
         int zoomcount = 0;
+        double[] focus = new double[2];
+
         //animation function. This contains code executed 20 times per second.
         public void OnFrameUpdate()
         {
@@ -158,42 +160,43 @@ namespace testmediasmall
             //Vector3d dpoint;
             Vector3d dpointNorm;
             dpointNorm = (lnorm + rnorm) * 0.5;
-            Vector3d gazeMedium = new Vector3d();
-            Vector3d focus = new Vector3d();
+            Vector3d gazeMedium = new Vector3d(0.5, 0.5, 0.0);
 
             dpointNorm.Y = 1.0 - dpointNorm.Y;
             //.WriteLine(dpointNorm.X);
             //dpoint = (lgaze + rgaze) * 0.5;
-            deviation = 0;
+            deviation = 100;
 
             ////////////////////////////////////////////////////////////////////5.8
             gazeL.Add(dpointNorm);
             if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
-            if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
-            else { gazeMedium = 0.5* gazeMedium + 0.5 * dpointNorm;
-            }
+            //if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
+            //else { gazeMedium = 0.5 * gazeMedium + 0.5 * dpointNorm; }
             int lastf = 12;
 
             if (gazeL.Count >= lastf)
             {
-                for (int i = 0; i < lastf; i++)
-                {
-                    deviation += 100 * (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared;
-                    //Console.WriteLine(deviation);
-                }
-                //Console.WriteLine(deviation);
+                gazeMedium = new Vector3d(0.0, 0.0, 0.0);
+                deviation = 0;
+                for (int i = 0; i < lastf; i++) { gazeMedium += gazeL[gazeL.Count - i - 1]; }
+                gazeMedium *= (1.0 / lastf);
+                for (int i = 0; i < lastf; i++) { deviation += 1000 * (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared; }
+
                 if (iszooming) //post fixation period lasts for zoomduration frames
                 {
                     zoomcount++;
-                    if (zoomcount >= zoomduration) { iszooming = false; }
+                    if (zoomcount >= zoomduration) 
+                    { 
+                        iszooming = false;
+                    }
                     //here write the code that is executed during the transition period [zoom, cut etc....]
                 }
-                else if (deviation < 10.0)
+                else if (deviation < 0.2)
                 {//deviation just dropped below threshold
                     Console.WriteLine("zoom start");
                     zoomcount = 0;
                     iszooming = true;
-                    focus = new Vector3d((1.0 - gazeMedium.X) * rx, (1.0 - gazeMedium.Y) * ry, 0.0);
+                    focus[0] = (1.0 - gazeMedium.X) * rx;  focus[1] = (1.0 - gazeMedium.Y) * ry; 
                 }
                 else
                 {//normal viewing period 
@@ -250,9 +253,7 @@ namespace testmediasmall
                 if (iszooming)
                 {
                     double s = 1.0 + zoomrate * cframe;
-                    double zx=40.0;
-                    double zy=25.0;
-                    vbit.Draw(rx*0.5-zx*s, ry*0.5-zy*s, rx*s, ry*s, 1.0);
+                    vbit.Draw( rx*0.5 - focus[0]*s, ry*0.5 - focus[1]*s, rx*s, ry*s, 1.0);
                 }
                 else
                 {
@@ -327,7 +328,7 @@ namespace testmediasmall
                     GL.PointSize(30.0f);
                     GL.Color4(0.0, 1.0, 1.0, 1);
                     GL.Begin(PrimitiveType.Points);
-                    GL.Vertex2(dpointNorm.X * rx, dpointNorm.Y * ry);
+                    GL.Vertex2(focus[0] * rx, focus[1] * ry );
                     GL.End();
 
                     GL.PointSize(block);
@@ -498,12 +499,12 @@ namespace testmediasmall
                 //        GL.PointSize((float)(diff * 50.0));
                 //        GL.Color4(1.0, 0.0, 0.0, 0.5);
                 //        GL.Begin(PrimitiveType.Points);
-                //        GL.Vertex2(i, j);
+                //        GL.Vertex2(i * Width /rx, j*Height/ry);
                 //        GL.End();
 
                 //        //angle 
                 //        double optFlowAngle = Math.Atan2(px[j, i].mx, px[j, i].my);
-                //       // optFlowAngle +=  
+                //        // optFlowAngle +=  
 
                 //        totalMovement += diff;
                 //    }

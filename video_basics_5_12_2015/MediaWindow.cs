@@ -80,8 +80,8 @@ namespace testmediasmall
             //...using webcam inputs
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             //...use video
-            //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
-            Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
+            Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
 
             System.Threading.Thread.Sleep(500);
             Video.SetResolution(360, 240);
@@ -99,7 +99,7 @@ namespace testmediasmall
         public int ry = 0;
 
         public bool playbackmode = false;
-        public int maxframes = 150;
+        public int maxframes = 80;
         public int cframe = 0;    //current frame
         double cframeSlowPlayback = 0;
         public int analyzedFrame;
@@ -162,27 +162,19 @@ namespace testmediasmall
             |  --     4    --  |
             ** mask 5 is the whole screen
             */
-            //Vector3d lgaze;
-            //Vector3d rgaze;
             Vector3d lnorm;
             Vector3d rnorm;
-
-            //lgaze = Vector3d.TransformPosition(EyeTracker.EyeLeftSmooth.GazePosition, EyeTracker.EyeToScreen);
-            //rgaze = Vector3d.TransformPosition(EyeTracker.EyeRightSmooth.GazePosition, EyeTracker.EyeToScreen);
 
             lnorm = new Vector3d(EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.X,
                                   EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.Y, 0.0);
             rnorm = new Vector3d(EyeTracker.EyeRightSmooth.GazePositionScreenNorm.X,
                                   EyeTracker.EyeRightSmooth.GazePositionScreenNorm.Y, 0.0);
 
-            //Vector3d dpoint;
             Vector3d dpointNorm;
             dpointNorm = (lnorm + rnorm) * 0.5;
             Vector3d gazeMedium = new Vector3d(0.5, 0.5, 0.0);
 
             dpointNorm.Y = 1.0 - dpointNorm.Y;
-            //.WriteLine(dpointNorm.X);
-            //dpoint = (lgaze + rgaze) * 0.5;
             deviation = 100;
 
             ////////////////////////////////////////////////////////////////////5.8
@@ -190,7 +182,7 @@ namespace testmediasmall
             if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
             //if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
             //else { gazeMedium = 0.5 * gazeMedium + 0.5 * dpointNorm; }
-            int lastf = 12; //number of frames to calculate the gazeMedium
+            int lastf = 8; //number of frames to calculate the gazeMedium
 
             if (gazeL.Count >= lastf)
             {
@@ -208,9 +200,10 @@ namespace testmediasmall
                         //here write the code that is executed during the transition period [zoom, cut etc....]
                         iszooming = false;
                         cframe = newFrame;
+                        cframeSlowPlayback = newFrame;
                     }
                 }
-                else if (deviation < 0.3)
+                else if (deviation < 0.25 && deviation > 0.000000001) //> 0.000000001 to avoid zooming when there's no gaze data (deviation = 0)
                 {//deviation just dropped below threshold
                     Console.WriteLine("zoom start");
                     zoomcount = 0;
@@ -249,13 +242,15 @@ namespace testmediasmall
                 cframeSlowPlayback += 0.3;
                 
                 cframe = (int) Math.Floor(cframeSlowPlayback);
-                if (cframe >= Vframe_repository.Count) cframe = 0;
-
+                if (cframe >= Vframe_repository.Count)
+                {
+                    cframe = 0;
+                    cframeSlowPlayback = 0;
+                }
 
                 //zoomMode false for testing blackout******************************************************************
                 bool blackout = false;
-                double zoomrate = 0.05;
-
+                double zoomrate = 0.01;
 
                 GL.ClearColor(1.0f, 0.6f, 0.6f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -264,33 +259,25 @@ namespace testmediasmall
                 GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////interaction
-                //match eye position with THIS frame's quality and switch to other frames accrording to that
-
-                //if dpoint has stayed in a certain location for an amount of time
-                //then draw pixels with a zoom from that location 
-                //Vector3d focus = new Vector3d((1.0 - dpointNorm.X) * rx, (1.0 - dpointNorm.Y) * ry, 0.0);
-
                 Console.WriteLine(iszooming);
                 double x0, y0, w, h;
                 if (iszooming)
                 {
                     double s = 1.0 + zoomrate * cframe;
-                    x0 = rx * 0.5 - focus[0] * s;
-                    y0 = ry * 0.5 - focus[1] * s;
-                    w = rx * s;
-                    h = ry * s;
-                    //vbit.Draw( rx*0.5 - focus[0]*s, ry*0.5 - focus[1]*s, rx*s, ry*s, 1.0);
+                    x0 = Math.Min(rx * 0.5 - focus[0] * s, 0.0); // max and min are used to constrain the frame in view port (no pink!)
+                    y0 = Math.Min(ry * 0.5 - focus[1] * s, 0.0);
+                    w = Math.Max(rx * s, rx - x0);
+                    h = Math.Max(ry * s, ry - y0);
                 }
                 else
                 {
-                    //vbit.Draw(0.0, 0.0, rx, ry, 1.0);
                     x0 = 0.0;
                     y0 = 0.0;
                     w = rx;
                     h = ry;
                 }
 
-                byte[, ,] px = Vframe_repository[cframe].frame_pix_data;/////////////////////cframe
+                byte[, ,] px = Vframe_repository[cframe].frame_pix_data;
                 vbit.FromFrame(px);
                 vbit.Draw(x0, y0, w, h, 1.0);
 
@@ -325,8 +312,6 @@ namespace testmediasmall
                          GL.End();
                      }
                  }*/
-
-
 
                 /*/////////////////////////////////////////////////////////////////original code for drawing vframe
                 GL.RasterPos2(0.0, 0.0); //bottom left
@@ -394,10 +379,7 @@ namespace testmediasmall
                     {
                         alpha *= 0.8;
                     }
-
-
                 }
-
                 ///////////////////////////////////////////////////////////////////////////////////////////////////end of interaction
             }
             else
@@ -509,7 +491,6 @@ namespace testmediasmall
                 vf.HistoB = RGBColor.HistoB;
 
                 double cBlue = CvInvoke.cvCompareHist(vf.HistoR.Histogram, vf.HistoB.Histogram, Emgu.CV.CvEnum.HISTOGRAM_COMP_METHOD.CV_COMP_CORREL);
-                //Console.WriteLine(cBlue);
                 //////////////////////////////////////////////////////////////////////////////color palette code
                 ColorQuant ColorQuantizer = new ColorQuant();
                 Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 3);
@@ -517,7 +498,6 @@ namespace testmediasmall
                 Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);
                 var a = ColorQuantizer.TranslateHSV(initialCMap[0]);
                 vf.domiHue = a[0];
-                //Console.WriteLine(vf.domiHue);
                 ////////////////////////////////////////////////////////////////////////end of color palette cod
 
 

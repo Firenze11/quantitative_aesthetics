@@ -105,6 +105,7 @@ namespace testmediasmall
         public int analyzedFrame;
         int newFrame;
         double minDomiHue = 10.0;
+        double domiHueDiff;
 
         public VBitmap vbit;
 
@@ -126,17 +127,32 @@ namespace testmediasmall
             //return aa.CompareTo(bb);
         }
 
-        public int pickNewSceneQuality(double minDomiHue)
+        public int domiHueTransition(double minDomiHue, bool complementary)
         {
             foreach (VFrame vframe in Vframe_repository)
             {
                 if (vframe != Vframe_repository[analyzedFrame]) //skip the analyzed frame 
                 {
-                    double domiHueDiff = Math.Abs(Vframe_repository[analyzedFrame].domiHue - vframe.domiHue);
-                    if (domiHueDiff < minDomiHue)
+                    //complementary
+                    if (complementary)
                     {
-                        minDomiHue = domiHueDiff;
-                        newFrame = vframe.frameNumber; //if there are multiple frames with the same domiHue, then pick the earliest frame  
+                        domiHueDiff = Math.Abs((Vframe_repository[analyzedFrame].domiHue + 0.5) - vframe.domiHue);
+                        if (domiHueDiff < minDomiHue)
+                        {
+                            minDomiHue = domiHueDiff;
+                            newFrame = vframe.frameNumber; //if there are multiple frames with the same domiHue, then pick the earliest frame
+                        }
+                        Console.WriteLine("complementary" + newFrame.domiHue);
+                    }
+                    else //pick the similar dominant color
+                    {
+                        domiHueDiff = Math.Abs(Vframe_repository[analyzedFrame].domiHue - vframe.domiHue);
+                        if (domiHueDiff < minDomiHue)
+                        {
+                            minDomiHue = domiHueDiff;
+                            newFrame = vframe.frameNumber; //if there are multiple frames with the same domiHue, then pick the earliest frame
+                        }
+                        Console.WriteLine("domihue_newFrame" + vframe.domiHue);
                     }
                 }
             }
@@ -219,7 +235,9 @@ namespace testmediasmall
                     focus[0] = (1.0 - gazeMedium.X) * rx; 
                     focus[1] = (1.0 - gazeMedium.Y) * ry;
 
-                    pickNewSceneQuality(minDomiHue);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+                    Console.WriteLine("domihue" + vframe.domiHue);
+                    domiHueTransition(minDomiHue, false);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+
                 }
                 else
                 {//normal viewing period 
@@ -373,9 +391,7 @@ namespace testmediasmall
                         //visualize the gaze
 
                         GL.Color4(0.0, 0.0, 0.0, 1);
-
                         GL.Vertex2(gazeL[i].X * rx, gazeL[i].Y * ry);
-
 
                         // visualize the blackout points
                         // GL.PointSize(block);
@@ -428,24 +444,21 @@ namespace testmediasmall
                 */
 
                 vbit.Draw(0.0, 0.0, rx, ry, 1.0);
-
+                double totalMovement = 0.0;
+                
                 for (int j = 0; j < ry; ++j)
                 {
                     for (int i = 0; i < rx; ++i)
                     {
+                        //draw screen
                         //GL.PointSize((float)(1.0 + Video.Pixels[j, i].V * 20.0));
                         GL.PointSize((float)(rx));
+                        //draw pixels
                         GL.Color4(px[j, i].R, px[j, i].G, px[j, i].B, 1.0);
                         GL.Begin(PrimitiveType.Points);
                         GL.Vertex2(i, j);
                         GL.End();
-                        //draw movement 
-                        GL.LineWidth(1.0f);
-                        //GL.Begin(PrimitiveType.LineStrip);
-
-                        // GL.End();
-                        //GL.DrawPixels(2*rx, 2*ry, PixelFormat.Rgba, PixelType.Byte, );
-
+                       
                         //stream writer
                         /*sw.Write(frameNumber
                             + "," + j
@@ -485,6 +498,25 @@ namespace testmediasmall
 
                 RGBColor.FrameUpdate(px, rx, ry);
 
+                for (int j = 0; j < ry; ++j)
+                {
+                    for (int i = 0; i < rx; ++i)
+                    {
+                        //optical flow 
+                        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
+                        //angle 
+                        double optFlowAngle = Math.Atan2(px[j, i].mx, px[j, i].my);
+                        totalMovement += diff;
+
+                        //draw movement 
+                        //GL.PointSize((float)(diff * 10.0));
+                        //GL.Color4(1.0, 0.0, 0.0, 0.5);
+                        //GL.Begin(PrimitiveType.Points);
+                        //GL.Vertex2(i * Width/rx, j * Height/ry);
+                        //GL.End();
+                    }
+                }
+
                 VFrame vf = new VFrame();
                 //vf.frame_pix_data = (byte[, ,])RGBColor.imgdataBGR.Clone();
                 int j2;
@@ -507,6 +539,7 @@ namespace testmediasmall
                 vf.HistoR = RGBColor.HistoR;
                 vf.HistoG = RGBColor.HistoG;
                 vf.HistoB = RGBColor.HistoB;
+                vf.totalMovement = totalMovement;
 
                 double cBlue = CvInvoke.cvCompareHist(vf.HistoR.Histogram, vf.HistoB.Histogram, Emgu.CV.CvEnum.HISTOGRAM_COMP_METHOD.CV_COMP_CORREL);
                 //Console.WriteLine(cBlue);
@@ -517,34 +550,8 @@ namespace testmediasmall
                 Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);
                 var a = ColorQuantizer.TranslateHSV(initialCMap[0]);
                 vf.domiHue = a[0];
-                //Console.WriteLine(vf.domiHue);
-                ////////////////////////////////////////////////////////////////////////end of color palette cod
-
-
-                ///////////////////////////////////////////////////////////////////optical flow
-                //double totalMovement = 0.0;
-                //for (int j = 0; j < ry; ++j)
-                //{
-                //    for (int i = 0; i < rx; ++i)
-                //    {
-                //        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
-                //        GL.PointSize((float)(diff * 50.0));
-                //        GL.Color4(1.0, 0.0, 0.0, 0.5);
-                //        GL.Begin(PrimitiveType.Points);
-                //        GL.Vertex2(i * Width / rx, j * Height / ry);
-                //        GL.End();
-
-                //        //angle 
-                //        double optFlowAngle = Math.Atan2(px[j, i].mx, px[j, i].my);
-                //        // optFlowAngle +=  
-
-                //        totalMovement += diff;
-                //    }
-                //}
-                //vf.totalMovement = totalMovement;
-                /////////////////////////////////////////////////////////////end of optical flow
-
-
+                Console.WriteLine("domihue" + vf.domiHue);
+               
                 Vframe_repository.Add(vf);
                 //Console.WriteLine(RGBColor.avgb);
 

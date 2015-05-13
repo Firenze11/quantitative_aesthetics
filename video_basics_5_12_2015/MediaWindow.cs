@@ -80,8 +80,10 @@ namespace testmediasmall
             //...using webcam inputs
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             //...use video
-            Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
-            //Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics_5_12_2015\_testVideo2.avi");
+            
+            Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
 
             System.Threading.Thread.Sleep(500);
             Video.SetResolution(360, 240);
@@ -98,19 +100,22 @@ namespace testmediasmall
         public int rx = 0;
         public int ry = 0;
 
-        public bool playbackmode = false;
-        public int maxframes = 80;
-        public int cframe = 0;    //current frame
-        double cframeSlowPlayback = 0;
-        public int analyzedFrame;
+        bool playbackmode = false;
+        int maxframes = 40;
+        int cframe = 0;    //current frame
+        double cframeSlowPlayback = 0;  //reduce the frame rate for playback
+        int pframe;  //frame number of previous clip during transition
+        double pframeSlowPlayback;
+
+        int analyzedFrame;
         int newFrame;
-        double minDomiHue = 10.0;
+        //double minDomiHue = 10.0;
         double domiHueDiff;
 
         public VBitmap vbit;
 
         bool iszooming = false;
-        int zoomduration = 30;
+        int zoomduration = 100;
         int zoomcount = 0;
         double[] focus = new double[2];
 
@@ -127,56 +132,52 @@ namespace testmediasmall
             //return aa.CompareTo(bb);
         }
 
-        public int domiHueTransition(double minDomiHue, bool complementary)
+        //selection logic for the new scenes
+        public int domiHueTransition(int analyzedFrame, bool complementary)
         {
-            foreach (VFrame vframe in Vframe_repository)
+            int nf = 0;
+            double minDomiHue = 10;
+            
+            for (int i = 0; i < Vframe_repository.Count; i++) 
             {
-                if (vframe != Vframe_repository[analyzedFrame]) //skip the analyzed frame 
+                if (i > analyzedFrame + 10 || i < analyzedFrame - 10) //skip the analyzed frame 
                 {
                     //complementary
                     if (complementary)
                     {
-                        domiHueDiff = Math.Abs((Vframe_repository[analyzedFrame].domiHue + 0.5) - vframe.domiHue);
+                        domiHueDiff = Math.Abs((Vframe_repository[analyzedFrame].domiHue + 0.5) - Vframe_repository[i].domiHue);
                         if (domiHueDiff < minDomiHue)
                         {
                             minDomiHue = domiHueDiff;
-                            newFrame = vframe.frameNumber; //if there are multiple frames with the same domiHue, then pick the earliest frame
+                            nf = i; //if there are multiple frames with the same domiHue, then pick the earliest frame
                         }
-                        Console.WriteLine("complementary" + newFrame.domiHue);
                     }
                     else //pick the similar dominant color
                     {
-                        domiHueDiff = Math.Abs(Vframe_repository[analyzedFrame].domiHue - vframe.domiHue);
+                        domiHueDiff = Math.Abs(Vframe_repository[analyzedFrame].domiHue - Vframe_repository[i].domiHue);
                         if (domiHueDiff < minDomiHue)
                         {
                             minDomiHue = domiHueDiff;
-                            newFrame = vframe.frameNumber; //if there are multiple frames with the same domiHue, then pick the earliest frame
+                            nf = i; //if there are multiple frames with the same domiHue, then pick the earliest frame
                         }
-                        Console.WriteLine("domihue_newFrame" + vframe.domiHue);
                     }
                 }
             }
-            return newFrame;
+            return nf;
         } 
 
-        
         //animation function. This contains code executed 20 times per second.
         public void OnFrameUpdate()
         {
             newFrame = cframe;
-
             if (Video.IsVideoCapturing && vbit == null)
             {
                 vbit = new VBitmap(Video.ResX, Video.ResY);
             }
-
-            //////////////////////////////////////////////////////////////////////////////////MATCH GAZE WITH MASK///
-            //create mask:
-            /* 
+            /* mask
             |  --     3    --  |
             |   1  |  0  |  2  |
             |  --     4    --  |
-            ** mask 5 is the whole screen
             */
             Vector3d lnorm;
             Vector3d rnorm;
@@ -191,9 +192,8 @@ namespace testmediasmall
             Vector3d gazeMedium = new Vector3d(0.5, 0.5, 0.0);
 
             dpointNorm.Y = 1.0 - dpointNorm.Y;
-            deviation = 100;
+            //deviation = 100;
 
-            ////////////////////////////////////////////////////////////////////5.8
             gazeL.Add(dpointNorm);
             if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
             //if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
@@ -215,22 +215,33 @@ namespace testmediasmall
                     {
                         //here write the code that is executed during the transition period [zoom, cut etc....]
                         iszooming = false;
-                        cframe = newFrame;
-                        cframeSlowPlayback = newFrame;
                     }
                 }
                 else if (deviation < 0.25 && deviation > 0.000000001) //> 0.000000001 to avoid zooming when there's no gaze data (deviation = 0)
                 {//deviation just dropped below threshold
-                    Console.WriteLine("zoom start");
-                    zoomcount = 0;
-                    analyzedFrame = cframe;    //this is the frame that will be analyzed for identifying next chunk of film
                     iszooming = true;
-                    focus[0] = (1.0 - gazeMedium.X) * rx; 
-                    focus[1] = (1.0 - gazeMedium.Y) * ry;
+                    zoomcount = 0;
 
-                    Console.WriteLine("domihue" + vframe.domiHue);
-                    domiHueTransition(minDomiHue, false);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+                    focus[0] = gazeMedium.X * rx;
+                    focus[1] = gazeMedium.Y * ry;
 
+                    //////////////////////////////////////////Frame reassignments
+                    pframe = cframe;
+                    //analyzedFrame = cframe; //this is the frame that will be analyzed for identifying next chunk of film
+                    pframeSlowPlayback = cframe;
+
+                    //choose which scene to show
+                    newFrame = domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+
+                    //iszooming = false;
+                    cframe = newFrame;
+                    cframeSlowPlayback = newFrame;
+
+                    //-----WHY FOR SECOND TIME?
+
+                    //domiHueTransition(minDomiHue, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+                    
+                    //ZOOM IN ALL THE WAY TO A PIXEL
                 }
                 else
                 {//normal viewing period 
@@ -257,18 +268,28 @@ namespace testmediasmall
 
             if (playbackmode)
             {
-                cframeSlowPlayback += 0.3;
-                
+                cframeSlowPlayback += 0.2;
                 cframe = (int) Math.Floor(cframeSlowPlayback);
+
+                //zoom transition, slower frame rate
+                pframeSlowPlayback += 0.2;
+                pframe = (int)Math.Floor(pframeSlowPlayback);
+
                 if (cframe >= Vframe_repository.Count)
                 {
                     cframe = 0;
                     cframeSlowPlayback = 0;
                 }
 
+                if (pframe >= Vframe_repository.Count)
+                {
+                    pframe = 0;
+                    pframeSlowPlayback = 0;
+                }
+
                 //zoomMode false for testing blackout******************************************************************
-                bool blackout = false;
-                double zoomrate = 0.01;
+                bool blackout = true;
+                double zoomrate = 0.05;
 
                 GL.ClearColor(1.0f, 0.6f, 0.6f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -277,60 +298,32 @@ namespace testmediasmall
                 GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////interaction
-                Console.WriteLine(iszooming);
-                double x0, y0, w, h;
-                if (iszooming)
-                {
-                    double s = 1.0 + zoomrate * cframe;
-                    x0 = Math.Min(rx * 0.5 - focus[0] * s, 0.0); // max and min are used to constrain the frame in view port (no pink!)
-                    y0 = Math.Min(ry * 0.5 - focus[1] * s, 0.0);
-                    w = Math.Max(rx * s, rx - x0);
-                    h = Math.Max(ry * s, ry - y0);
-                }
-                else
-                {
-                    x0 = 0.0;
-                    y0 = 0.0;
-                    w = rx;
-                    h = ry;
-                }
+                double x0, y0, w, h, a;
+
+                x0 = 0.0;
+                y0 = 0.0;
+                w = rx;
+                h = ry;
 
                 byte[, ,] px = Vframe_repository[cframe].frame_pix_data;
                 vbit.FromFrame(px);
                 vbit.Draw(x0, y0, w, h, 1.0);
 
+                if (iszooming)
+                {
+                    double s = 1.0 + zoomrate * cframe;
+                    //x0 = Math.Min(rx * 0.5 - focus[0] * s, 0.0); // max and min are used to constrain the frame in view port (no pink!)
+                    //y0 = Math.Min(ry * 0.5 - focus[1] * s, 0.0);
+                    x0 = Math.Min(focus[0] * (1.0-s), 0.0); // max and min are used to constrain the frame in view port (no pink!)
+                    y0 = Math.Min(focus[1] * (1.0-s), 0.0);
+                    w = Math.Max(rx * s, rx - x0);
+                    h = Math.Max(ry * s, ry - y0);
+                    //a = 1.0 - ((double) zoomcount) / ((double)zoomduration);
 
-                /* for (int j = 0; j < ry; ++j)
-                 {
-                     for (int i = 0; i < rx; ++i)
-                     {
-                         //GL.PointSize((float)(1.0 + Video.Pixels[j, i].V * 20.0));
-                         GL.PointSize((float)(rx * (1 + cframe * cframe * zoomrate)));
-                         GL.Color4(px[j, i, 2] / 255.0, px[j, i, 1] / 255.0, px[j, i, 0] / 255.0, 1.0);
-                         GL.Begin(PrimitiveType.Points);
-
-                         Vector3d pos = new Vector3d(i, j, 0.0);
-                         if (zoomMode)
-                         {
-                             Vector3d zommedPos = (pos - focus) * (zoomrate * cframe) + pos;
-                             GL.Vertex2(zommedPos.X, zommedPos.Y);
-                         }
-                         else
-                         {
-                             GL.Vertex2(i, j);
-                         }
-                        
-                         //GL.Vertex2(i, j);
-
-                         GL.End();
-                         //draw movement 
-                         GL.LineWidth(1.0f);
-                         //GL.Begin(PrimitiveType.LineStrip);
-
-                         GL.End();
-                     }
-                 }*/
-
+                    byte[, ,] pre_px = Vframe_repository[pframe].frame_pix_data;
+                    vbit.FromFrame(pre_px);
+                    vbit.Draw(x0, y0, w, h, 1.0);
+                }
                 /*/////////////////////////////////////////////////////////////////original code for drawing vframe
                 GL.RasterPos2(0.0, 0.0); //bottom left
                 GL.PixelZoom((float)Width / rx * (frameNumber - 190) * 0.1f, (float)Height / ry * (frameNumber - 190) * 0.1f);
@@ -363,11 +356,12 @@ namespace testmediasmall
                     //GL.Vertex2(0, 40);
                     //GL.End();
 
-                    GL.PointSize(30.0f);
+                    GL.PointSize(30.0f);///////////////////////////////////////////////////////////////////////////VISUALIZE GAZE
                     GL.Color4(0.0, 1.0, 1.0, 1);
                     GL.Begin(PrimitiveType.Points);
-                    GL.Vertex2(focus[0] * rx, focus[1] * ry);
+                    GL.Vertex2(focus[0], focus[1] );
                     GL.End();
+                    Console.WriteLine(focus[0] + ", "+focus[1]);
 
                     GL.PointSize(block);
                     GL.Begin(PrimitiveType.Points);
@@ -441,19 +435,6 @@ namespace testmediasmall
                         GL.Vertex2(i, j);
                         GL.End();
                        
-                        //stream writer
-                        /*sw.Write(frameNumber
-                            + "," + j
-                            + "," + i
-                            + "," + px[j, i].R
-                            + "," + px[j, i].G
-                            + "," + px[j, i].B
-                            + "," + px[j, i].V
-                            + ","
-                            //==================================also get alpha!!
-                            );
-                         * */
-
                         //create histogram from bins (alternative to openCV)
                         /*
                         double R = Video.Pixels[j, i].R;
@@ -475,7 +456,6 @@ namespace testmediasmall
                     }
                 }
                 sw.WriteLine();
-                //Console.Write(frameNumber + ", ");
                 frameNumber++;
 
                 RGBColor.FrameUpdate(px, rx, ry);
@@ -526,13 +506,11 @@ namespace testmediasmall
                 double cBlue = CvInvoke.cvCompareHist(vf.HistoR.Histogram, vf.HistoB.Histogram, Emgu.CV.CvEnum.HISTOGRAM_COMP_METHOD.CV_COMP_CORREL);
                 //////////////////////////////////////////////////////////////////////////////color palette code
                 ColorQuant ColorQuantizer = new ColorQuant();
-                Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 3);
-                Colormap DiffColorMap = ColorQuantizer.SortByDifference(initialCMap);
-                Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);
-                var a = ColorQuantizer.TranslateHSV(initialCMap[0]);
+                Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 20);    //sort by frequency
+                Colormap DiffColorMap = ColorQuantizer.SortByDifference(initialCMap);   //sort intialCMap again by the different; distinct color
+                Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);   //sort intialCMap by hue
+                var a = ColorQuantizer.TranslateHSV(DiffColorMap[0]);
                 vf.domiHue = a[0];
-
-                Console.WriteLine("domihue" + vf.domiHue);
                
                 ////////////////////////////////////////////////////////////////////////end of color palette cod
 
@@ -561,7 +539,6 @@ namespace testmediasmall
                 /////////////////////////////////////////////////////////////end of optical flow
 
                 Vframe_repository.Add(vf);
-                //Console.WriteLine(RGBColor.avgb);
 
                 //checking past 20 frames
                 /*GL.PixelZoom(0.5f, 0.5f);

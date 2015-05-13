@@ -78,10 +78,6 @@ namespace testmediasmall
             if (histo_writer == null)
             {
                 histo_writer = new StreamWriter(@"histo.csv");
-<<<<<<< HEAD
-=======
-
->>>>>>> 6e7ca457fab025de210275edc2d34470f4d9a9c3
                 histo_writer.Flush();
             }
             if (imgdata == null)

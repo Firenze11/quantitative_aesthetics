@@ -77,7 +77,11 @@ namespace testmediasmall
         {
             if (histo_writer == null)
             {
+<<<<<<< HEAD
                 histo_writer = new StreamWriter(@"histo.csv");
+=======
+                histo_writer = new StreamWriter("C:/Users/anakano/Documents/Classes/GSD6432/Final_Project/quantitative_aesthetics/video_basics_5_7_2015_w_o_optc_fl/histo.csv");
+>>>>>>> 762cb7fd56733434b37d61f49c5a819c9b05fece
                 histo_writer.Flush();
             }
             if (imgdata == null)

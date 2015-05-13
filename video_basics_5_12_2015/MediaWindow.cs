@@ -19,17 +19,19 @@ namespace testmediasmall
 {
     public class VFrame
     {
-        public byte[, ,] frame_pix_data = null;
+        public byte[, ,] frame_pix_data = null; //[j2, i, k];
         //qualifiers
         public double avgr = 0.0;
         public double avgg = 0.0;
         public double avgb = 0.0;
+        public List<float[]> maskAvgRGBColor;
         public double totalMovement = 0.0;
         public double domiHue = 0.0; //dominant Hue
         public RGBHisto HistoR;
         public RGBHisto HistoG;
         public RGBHisto HistoB;
         public int frameNumber;
+        
     }
 
     public class MediaWindow
@@ -133,6 +135,8 @@ namespace testmediasmall
         }
 
         //selection logic for the new scenes
+        public int skippedFrameRange = 10;
+
         public int domiHueTransition(int analyzedFrame, bool complementary)
         {
             int nf = 0;
@@ -140,7 +144,7 @@ namespace testmediasmall
             
             for (int i = 0; i < Vframe_repository.Count; i++) 
             {
-                if (i > analyzedFrame + 10 || i < analyzedFrame - 10) //skip the analyzed frame 
+                if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
                 {
                     //complementary
                     if (complementary)
@@ -164,7 +168,32 @@ namespace testmediasmall
                 }
             }
             return nf;
-        } 
+        }
+
+        public int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB)
+        {
+            int nf = 0;
+            float minColorQuality = 255;
+
+            byte colorQuality = gazeRGB.Max();
+            int colorQualityIndex = gazeRGB.ToList().IndexOf(colorQuality); //pick between redness, greenness, blueness for the gaze
+
+            for (int i = 0; i < Vframe_repository.Count; i++)
+            {
+                if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
+                {
+                    float frameColorQuality = Vframe_repository[i].maskAvgRGBColor[gazeMaskNum][colorQualityIndex];   //get colorQuality (red, blue, greenness) value in mask number matching the gaze
+                    float colorQualityDiff = Math.Abs(colorQuality - frameColorQuality);
+                    if (colorQualityDiff < minColorQuality)
+                    {
+                        minColorQuality = colorQualityDiff;
+                        nf = i;
+                        Console.WriteLine("nf: " + nf);
+                    }
+                }
+            }
+            return nf;
+        }
 
         //animation function. This contains code executed 20 times per second.
         public void OnFrameUpdate()
@@ -193,7 +222,18 @@ namespace testmediasmall
 
             dpointNorm.Y = 1.0 - dpointNorm.Y;
             //deviation = 100;
+            
+            //get mask number of the gaze
+            int num;    
+            if (dpointNorm.Y > 0.75) { num = 4; }
+            else if (dpointNorm.Y < 0.25) { num = 3; }
+            else if (dpointNorm.X < 0.25) { num = 1; }
+            else if (dpointNorm.X > 0.75) { num = 2; }
+            else { num = 0; }
 
+            sw.WriteLine(num + "," + dpointNorm.X + "," + dpointNorm.Y + ",");
+            Console.WriteLine(num); //end getting mask number of gaze
+            
             gazeL.Add(dpointNorm);
             if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
             //if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
@@ -231,7 +271,9 @@ namespace testmediasmall
                     pframeSlowPlayback = cframe;
 
                     //choose which scene to show
-                    newFrame = domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+                    //newFrame = domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+                    byte[] gazeRGB = {10,10,10};
+                    newFrame = maskAvgRGBTransition(cframe, num, gazeRGB);
 
                     //iszooming = false;
                     cframe = newFrame;
@@ -248,15 +290,6 @@ namespace testmediasmall
                     //write here the code that is executed during normal viewing
                 }
             }
-
-            int num;
-            if (dpointNorm.Y > 0.75) { num = 4; }
-            else if (dpointNorm.Y < 0.25) { num = 3; }
-            else if (dpointNorm.X < 0.25) { num = 1; }
-            else if (dpointNorm.X > 0.75) { num = 2; }
-            else { num = 0; }
-
-            sw.WriteLine(num + "," + dpointNorm.X + "," + dpointNorm.Y + ",");
             /////////////////////////////////////////////////////////////////////////////////END OF MATCH GAZE WITH MASK///
 
 
@@ -361,7 +394,7 @@ namespace testmediasmall
                     GL.Begin(PrimitiveType.Points);
                     GL.Vertex2(focus[0], focus[1] );
                     GL.End();
-                    Console.WriteLine(focus[0] + ", "+focus[1]);
+                    //Console.WriteLine(focus[0] + ", "+focus[1]);
 
                     GL.PointSize(block);
                     GL.Begin(PrimitiveType.Points);
@@ -498,6 +531,7 @@ namespace testmediasmall
                 vf.avgr = RGBColor.avgr;
                 vf.avgg = RGBColor.avgg;
                 vf.avgb = RGBColor.avgb;
+                vf.maskAvgRGBColor = RGBColor.maskAvgRGBColor;
                 vf.HistoR = RGBColor.HistoR;
                 vf.HistoG = RGBColor.HistoG;
                 vf.HistoB = RGBColor.HistoB;

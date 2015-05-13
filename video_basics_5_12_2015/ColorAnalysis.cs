@@ -56,6 +56,7 @@ namespace testmediasmall
         public float avgr_index = 0;
         public float avgg_index = 0;
         public float avgb_index = 0;
+        public List<float[]> maskAvgRGBColor = new List<float[]>();  //store rgb average for each mask
 
         //public byte[] HistoRA_byte;
         //public byte[] HistoGA_byte;
@@ -158,6 +159,7 @@ namespace testmediasmall
                     avgb += imgdataB[j2, i, 0] - (imgdataR[j2, i, 0] + imgdataG[j2, i, 0]) / 2;
                 }
             }
+            //avg rgb for the whole screen
             avgr = avgr / (rx * ry);
             avgg = avgg / (rx * ry);
             avgb = avgb / (rx * ry);
@@ -230,19 +232,24 @@ namespace testmediasmall
                 HistoBA = HistoB.CalculateRGBHistogram(imgB, masks[j]);
 
                 //get highest bin index
-               /* foreach (int i in HistoR.binNum) {
-                    avgr = HistoRA.count();
-                    avgg = HistoGA.Max();
-                    avgb = HistoBA.Max();
+                avgr = HistoRA.Max();
+                avgg = HistoGA.Max();
+                avgb = HistoBA.Max();
                 
-                    avgr_index = HistoRA.ToList().IndexOf(avgr);
-                    avgg_index = HistoGA.ToList().IndexOf(avgg);
-                    avgb_index = HistoBA.ToList().IndexOf(avgb);
+                avgr_index = HistoRA.ToList().IndexOf(avgr);
+                avgg_index = HistoGA.ToList().IndexOf(avgg);
+                avgb_index = HistoBA.ToList().IndexOf(avgb);
 
-                    avgb_index = avgb_index - (avgg_index + avgr_index) / 2;
-                }                
+                avgr_index = avgr_index - (avgg_index + avgb_index) / 2;
+                avgg_index = avgg_index - (avgr_index + avgb_index) / 2; 
+                avgb_index = avgb_index - (avgg_index + avgr_index) / 2;
 
-                */
+                float[] eachMaskRGBColor = new float[3] {avgr_index, avgg_index, avgb_index};
+                Console.WriteLine("eachMaskRGBColor: " + eachMaskRGBColor[0] 
+                    +", " + eachMaskRGBColor[1]
+                    + ", " + eachMaskRGBColor[2]
+                    );
+                maskAvgRGBColor.Add(eachMaskRGBColor);
                 //float[] HistSA = HistoH.CalculateRGBHistogram(imgHue, masks[m]);
 
                 //render histogram on screen
@@ -317,7 +324,7 @@ namespace testmediasmall
 
     public class RGBHisto
     {
-        public int binNum = 256;
+        public int binNum = 10;
         public int range = 256;
         public DenseHistogram Histogram;
 

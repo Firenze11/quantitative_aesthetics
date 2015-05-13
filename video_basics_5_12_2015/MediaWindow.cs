@@ -80,7 +80,8 @@ namespace testmediasmall
             //...using webcam inputs
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             //...use video
-            Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
+            Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
 
             System.Threading.Thread.Sleep(500);
             Video.SetResolution(360, 240);
@@ -94,17 +95,23 @@ namespace testmediasmall
             EyeTracker.ShutDown();/////////////////////////////////////////////////////////////////////// EYE TRACKER SHUT DOWN
         }
 
-        public bool playbackmode = false;
-        public int maxframes = 150;
-        public int cframe = 0;    //current frame
-
         public int rx = 0;
         public int ry = 0;
 
-        public VBitmap vbit;
+        public bool playbackmode = false;
+        public int maxframes = 150;
+        public int cframe = 0;    //current frame
+        double cframeSlowPlayback = 0;
         public int analyzedFrame;
+        int newFrame;
+        double minDomiHue = 10.0;
 
-        //public bool optFlow = false;
+        public VBitmap vbit;
+
+        bool iszooming = false;
+        int zoomduration = 30;
+        int zoomcount = 0;
+        double[] focus = new double[2];
 
         public int sorter(VFrame a, VFrame b)
         {
@@ -113,27 +120,40 @@ namespace testmediasmall
             //return a.avgb.CompareTo(b.avgb);
             //return a.totalMovement.CompareTo(b.totalMovement);
             return a.domiHue.CompareTo(b.domiHue);
+            
             //double aa = a.domiHue + a.totalMovement*0.1;
             //double bb = b.domiHue + b.totalMovement*0.1;
-
             //return aa.CompareTo(bb);
-
         }
 
-        bool iszooming = false;
-        int zoomduration = 30;
-        int zoomcount = 0;
-        double[] focus = new double[2];
+        public int newSceneQuality(double minDomiHue)
+        {
+            foreach (VFrame vframe in Vframe_repository)
+            {
+                if (vframe != Vframe_repository[analyzedFrame]) //skip the analyzed frame 
+                {
+                    double domiHueDiff = Math.Abs(Vframe_repository[analyzedFrame].domiHue - vframe.domiHue);
+                    if (domiHueDiff < minDomiHue)
+                    {
+                        minDomiHue = domiHueDiff;
+                        newFrame = vframe.frameNumber; //if there are multiple frames with the same domiHue, then pick the earliest frame  
+                    }
+                }
+            }
+            return newFrame;
+        } 
 
+        
         //animation function. This contains code executed 20 times per second.
         public void OnFrameUpdate()
         {
-            int newFrame = cframe;
+            newFrame = cframe;
 
             if (Video.IsVideoCapturing && vbit == null)
             {
                 vbit = new VBitmap(Video.ResX, Video.ResY);
             }
+
             //////////////////////////////////////////////////////////////////////////////////MATCH GAZE WITH MASK///
             //create mask:
             /* 
@@ -170,15 +190,15 @@ namespace testmediasmall
             if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
             //if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
             //else { gazeMedium = 0.5 * gazeMedium + 0.5 * dpointNorm; }
-            int lastf = 12;
+            int lastf = 12; //number of frames to calculate the gazeMedium
 
             if (gazeL.Count >= lastf)
             {
                 gazeMedium = new Vector3d(0.0, 0.0, 0.0);
                 deviation = 0;
                 for (int i = 0; i < lastf; i++) { gazeMedium += gazeL[gazeL.Count - i - 1]; }
-                gazeMedium *= (1.0 / lastf);
-                for (int i = 0; i < lastf; i++) { deviation += 1000 * (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared; }
+                gazeMedium *= (1.0 / lastf);    //take the average of the last #(lastf) frames
+                for (int i = 0; i < lastf; i++) { deviation += 1000 * (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared; } //"standard dev"
 
                 if (iszooming) //post fixation period lasts for zoomduration frames
                 {
@@ -196,21 +216,10 @@ namespace testmediasmall
                     zoomcount = 0;
                     analyzedFrame = cframe;    //this is the frame that will be analyzed for identifying next chunk of film
                     iszooming = true;
-                    focus[0] = (1.0 - gazeMedium.X) * rx; focus[1] = (1.0 - gazeMedium.Y) * ry;
-                    //////////////////////////////while in zooming identify the next frame to show: from the repository pick the one with same domihue 
-                    double minDomiHue = 10.0;
-                    foreach (VFrame vframe in Vframe_repository)
-                    {
-                        if (vframe != Vframe_repository[analyzedFrame]) //skip the analyzed frame 
-                        {
-                            double domiHueDiff = Math.Abs(Vframe_repository[analyzedFrame].domiHue - vframe.domiHue);
-                            if (domiHueDiff < minDomiHue)
-                            {
-                                minDomiHue = domiHueDiff;
-                                newFrame = vframe.frameNumber; //if there are multiple frames with the same domiHue, then pick the earliest frame  
-                            }
-                        }
-                    }//end of analyzing for next chunk of film
+                    focus[0] = (1.0 - gazeMedium.X) * rx; 
+                    focus[1] = (1.0 - gazeMedium.Y) * ry;
+
+                    newSceneQuality(minDomiHue);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
                 }
                 else
                 {//normal viewing period 
@@ -237,7 +246,9 @@ namespace testmediasmall
 
             if (playbackmode)
             {
-                cframe++;
+                cframeSlowPlayback += 0.3;
+                
+                cframe = (int) Math.Floor(cframeSlowPlayback);
                 if (cframe >= Vframe_repository.Count) cframe = 0;
 
 
@@ -398,11 +409,8 @@ namespace testmediasmall
                 VideoPixel[,] px = Video.Pixels;
                 rx = Video.ResX;
                 ry = Video.ResY;
-
                 vbit.FromVideo(Video);
-                //............................................................index each frames
-
-
+                
                 GL.ClearColor(0.6f, 0.6f, 0.6f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                 GL.MatrixMode(MatrixMode.Projection);
@@ -523,7 +531,7 @@ namespace testmediasmall
                 //        GL.PointSize((float)(diff * 50.0));
                 //        GL.Color4(1.0, 0.0, 0.0, 0.5);
                 //        GL.Begin(PrimitiveType.Points);
-                //        GL.Vertex2(i * Width /rx, j*Height/ry);
+                //        GL.Vertex2(i * Width / rx, j * Height / ry);
                 //        GL.End();
 
                 //        //angle 

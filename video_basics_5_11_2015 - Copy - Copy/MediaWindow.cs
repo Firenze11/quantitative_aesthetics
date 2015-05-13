@@ -95,7 +95,7 @@ namespace testmediasmall
         }
 
         public bool playbackmode = false;
-        public int maxframes = 150;
+        public int maxframes = 50;
         public int cframe = 0;    //current frame
 
         public int rx = 0;
@@ -179,7 +179,10 @@ namespace testmediasmall
                 for (int i = 0; i < lastf; i++) { gazeMedium += gazeL[gazeL.Count - i - 1]; }
                 gazeMedium *= (1.0 / lastf);
                 for (int i = 0; i < lastf; i++) { deviation += 1000 * (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared; }
-
+                //if (gazeL.Count == lastf)
+                //{
+                    Console.WriteLine( "dev " + deviation);  
+               // }
                 if (iszooming) //post fixation period lasts for zoomduration frames
                 {
                     zoomcount++;
@@ -190,7 +193,7 @@ namespace testmediasmall
                         cframe = newFrame;
                     }
                 }
-                else if (deviation < 0.3)
+                else if (deviation < 0.3 && deviation > 0.000000001) //> 0.000000001 to avoid zooming when there's no gaze data (deviation = 0)
                 {//deviation just dropped below threshold
                     Console.WriteLine("zoom start");
                     zoomcount = 0;
@@ -259,15 +262,15 @@ namespace testmediasmall
                 //then draw pixels with a zoom from that location 
                 //Vector3d focus = new Vector3d((1.0 - dpointNorm.X) * rx, (1.0 - dpointNorm.Y) * ry, 0.0);
 
-                Console.WriteLine(iszooming);
+                //Console.WriteLine(iszooming);
                 double x0, y0, w, h;
                 if (iszooming)
                 {
                     double s = 1.0 + zoomrate * cframe;
-                    x0 = rx * 0.5 - focus[0] * s;
-                    y0 = ry * 0.5 - focus[1] * s;
-                    w = rx * s;
-                    h = ry * s;
+                    x0 = Math.Min ( rx * 0.5 - focus[0] * s, 0.0); // max and min are used to constrain the frame in view port (no pink!)
+                    y0 = Math.Min (ry * 0.5 - focus[1] * s, 0.0);
+                    w = Math.Max (rx * s, rx - x0);
+                    h = Math.Max (ry * s, ry - y0);
                     //vbit.Draw( rx*0.5 - focus[0]*s, ry*0.5 - focus[1]*s, rx*s, ry*s, 1.0);
                 }
                 else
@@ -504,7 +507,7 @@ namespace testmediasmall
                 //Console.WriteLine(cBlue);
                 //////////////////////////////////////////////////////////////////////////////color palette code
                 ColorQuant ColorQuantizer = new ColorQuant();
-                Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 3);
+                Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 20);
                 Colormap DiffColorMap = ColorQuantizer.SortByDifference(initialCMap);
                 Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);
                 var a = ColorQuantizer.TranslateHSV(initialCMap[0]);

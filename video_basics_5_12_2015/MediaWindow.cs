@@ -126,7 +126,7 @@ namespace testmediasmall
             //return aa.CompareTo(bb);
         }
 
-        public int newSceneQuality(double minDomiHue)
+        public int pickNewSceneQuality(double minDomiHue)
         {
             foreach (VFrame vframe in Vframe_repository)
             {
@@ -219,7 +219,7 @@ namespace testmediasmall
                     focus[0] = (1.0 - gazeMedium.X) * rx; 
                     focus[1] = (1.0 - gazeMedium.Y) * ry;
 
-                    newSceneQuality(minDomiHue);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+                    pickNewSceneQuality(minDomiHue);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
                 }
                 else
                 {//normal viewing period 

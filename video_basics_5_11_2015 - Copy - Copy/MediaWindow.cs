@@ -97,6 +97,7 @@ namespace testmediasmall
         public bool playbackmode = false;
         public int maxframes = 50;
         public int cframe = 0;    //current frame
+        public double cframeSlowPlayback = 0;
 
         public int rx = 0;
         public int ry = 0;
@@ -163,9 +164,7 @@ namespace testmediasmall
             dpointNorm.Y = 1.0 - dpointNorm.Y;
             //.WriteLine(dpointNorm.X);
             //dpoint = (lgaze + rgaze) * 0.5;
-            deviation = 100;
 
-            ////////////////////////////////////////////////////////////////////5.8
             gazeL.Add(dpointNorm);
             if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
             //if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
@@ -181,7 +180,7 @@ namespace testmediasmall
                 for (int i = 0; i < lastf; i++) { deviation += 1000 * (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared; }
                 //if (gazeL.Count == lastf)
                 //{
-                    Console.WriteLine( "dev " + deviation);  
+                    //Console.WriteLine( "dev " + deviation);  
                // }
                 if (iszooming) //post fixation period lasts for zoomduration frames
                 {
@@ -190,6 +189,7 @@ namespace testmediasmall
                     {
                         //here write the code that is executed during the transition period [zoom, cut etc....]
                         iszooming = false;
+                        cframeSlowPlayback = newFrame;
                         cframe = newFrame;
                     }
                 }
@@ -240,8 +240,14 @@ namespace testmediasmall
 
             if (playbackmode)
             {
-                cframe++;
-                if (cframe >= Vframe_repository.Count) cframe = 0;
+                cframeSlowPlayback += 0.3;
+                cframe = (int)Math.Floor( cframeSlowPlayback );
+                Console.WriteLine(cframe);
+                if (cframe >= Vframe_repository.Count)
+                {
+                    cframe = 0;
+                    cframeSlowPlayback = 0.0;
+                }
 
 
                 //zoomMode false for testing blackout******************************************************************

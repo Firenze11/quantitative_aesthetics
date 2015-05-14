@@ -245,10 +245,7 @@ namespace testmediasmall
                 avgb_index = avgb_index - (avgg_index + avgr_index) / 2;
 
                 float[] eachMaskRGBColor = new float[3] {avgr_index, avgg_index, avgb_index};
-                Console.WriteLine("eachMaskRGBColor: " + eachMaskRGBColor[0] 
-                    +", " + eachMaskRGBColor[1]
-                    + ", " + eachMaskRGBColor[2]
-                    );
+                //Console.WriteLine("eachMaskRGBColor: " + eachMaskRGBColor[0] +", " + eachMaskRGBColor[1] + ", " + eachMaskRGBColor[2]);
                 maskAvgRGBColor.Add(eachMaskRGBColor);
                 //float[] HistSA = HistoH.CalculateRGBHistogram(imgHue, masks[m]);
 

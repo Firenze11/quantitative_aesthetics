@@ -32,8 +32,8 @@ namespace testmediasmall
         public RGBHisto HistoB;
         public int frameNumber;
         public double optFlowAngle;
-        public List<double> maskOpticalFlowMovement = new List<double>();
-        public List<Vector3d> maskOpticalFlowVector = new List<Vector3d>();
+        public double[] maskOpticalFlowMovement = new double[5];
+        public Vector3d[] maskOpticalFlowVector = new Vector3d[5];
     }
 
     public class MediaWindow
@@ -63,7 +63,6 @@ namespace testmediasmall
         //C_View is a class defined in the C_geometry.cs file and is just a helper object for managing viewpoint / tragetpoint camera mechanics
         public GLutils.C_View Viewer = new GLutils.C_View();
 
-
         //initialization function. Everything you write here is executed once in the begining of the program
         public void Initialize()
         {
@@ -86,9 +85,11 @@ namespace testmediasmall
             //...use video
 
             //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
             //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics_5_12_2015\_testVideo2.avi");
             
             Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
+
 
 
             System.Threading.Thread.Sleep(500);
@@ -107,7 +108,7 @@ namespace testmediasmall
         public int ry = 0;
 
         bool playbackmode = false;
-        int maxframes = 40;
+        int maxframes = 60;
         int cframe = 0;    //current frame
         double cframeSlowPlayback = 0;  //reduce the frame rate for playback
         int pframe;  //frame number of previous clip during transition
@@ -115,8 +116,6 @@ namespace testmediasmall
 
         int newFrame;
         byte[] gazeColor = new byte[3];
-        //double minDomiHue = 10.0;
-        //double domiHueDiff;
 
         public VBitmap vbit;
 
@@ -143,8 +142,6 @@ namespace testmediasmall
             //double bb = b.domiHue + b.totalMovement*0.1;
             //return aa.CompareTo(bb);
         }
-
-        //selection logic for the new scenes
 
         public int skippedFrameRange = 10;
 
@@ -211,7 +208,6 @@ namespace testmediasmall
                     {
                         minColorQuality = colorQualityDiff;
                         nf = i;
-                        //Console.WriteLine("nf: " + nf);
                     }
                 }
             }
@@ -271,7 +267,7 @@ namespace testmediasmall
                     Vector3d gazeAngle = gazeOptFlowVector.Normalized();
                     Vector3d newFrameAngleVector = Vframe_repository[i].maskOpticalFlowVector[gazeMaskNum].Normalized();
 
-                    totalMovementDiff = Math.Abs(gazeOptFlowMovement - (Vframe_repository[i].maskOpticalFlowMovement[gazeMaskNum]/Vframe_repository[i].maskOpticalFlowMovement.Count));
+                    totalMovementDiff = Math.Abs(gazeOptFlowMovement - Vframe_repository[i].maskOpticalFlowMovement[gazeMaskNum]);
                     optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, newFrameAngleVector);    //1 if parallel
 
                     if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be ~ +/- 30 degree
@@ -364,7 +360,7 @@ namespace testmediasmall
             else { num = 0; }
 
             sw.WriteLine(num + "," + dpointNorm.X + "," + dpointNorm.Y + ",");
-            Console.WriteLine(num); //end getting mask number of gaze
+            //Console.WriteLine(num); //end getting mask number of gaze
             
             gazeL.Add(dpointNorm);
             if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
@@ -416,13 +412,13 @@ namespace testmediasmall
                         //newFrame = domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
                         //byte[] gazeRGB = {10,10,10};
 
-                        Console.WriteLine(focus[0] + " " + focus[1]);
-
                         pframe = cframe; ///Frame reassignments
                         pframeSlowPlayback = cframe;
 
                         //choose which scene to show (just remember it for now, show it later)
-                        newFrame = maskOpticalFlowTransition(cframe, num, gazeOptFlowMovement, gazeOptFlowVector, true);
+                        newFrame = maskAvgRGBTransition(cframe, num, gazeColor, true);
+                        //newFrame = maskOpticalFlowTransition(cframe, num, gazeOptFlowMovement, gazeOptFlowAngleVector, true);//add px optical flow later!!
+
                         //newFrame = maskAvgRGBTransition(cframe, num, gazeColor, true);
                         //newFrame = domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
                     }
@@ -487,6 +483,25 @@ namespace testmediasmall
                     byte[, ,] px = Vframe_repository[cframe].frame_pix_data;
                     vbit.FromFrame(px);
                     vbit.Draw(x0, y0, w, h, 1.0);
+
+                    double r = vbit.Pixels[(int)(1.0 - dpointNorm.Y) * ry, (int)dpointNorm.X * rx].R;
+                    double g = vbit.Pixels[(int)(1.0 - dpointNorm.Y) * ry, (int)dpointNorm.X * rx].G;
+                    double b = vbit.Pixels[(int)(1.0 - dpointNorm.Y) * ry, (int)dpointNorm.X * rx].B;
+                    
+                    gazeColor[0] = (byte)r;
+                    gazeColor[1] = (byte)g;
+                    gazeColor[2] = (byte)b;
+
+                    //Console.WriteLine("rgb: "+r+", "+g+", "+b);
+                    GL.PointSize(30.0f);///////////////////////////////////////////////////////////////////////////////////////////VISUALIZE GAZE
+                    //GL.Color4(r / 255.0, g / 255.0, b / 255.0, 1);
+                    GL.Color4(r, g, b, 1.0);
+                    GL.Begin(PrimitiveType.Points);
+                    //GL.Vertex2(focus[0], focus[1] );
+                    GL.Vertex2(gazeMedium.X * rx, gazeMedium.Y * ry);
+                    GL.End();
+                    Console.WriteLine("rgb: " + r + ", " + g + ", " + b);
+
                 }
                 
                 if (iszooming)
@@ -507,17 +522,9 @@ namespace testmediasmall
                     vbit.FromFrame(pre_px);
                     vbit.Draw(x0, y0, w, h, a);
                 }
-                /*/////////////////////////////////////////////////////////////////original code for drawing vframe
-                GL.RasterPos2(0.0, 0.0); //bottom left
-                GL.PixelZoom((float)Width / rx * (frameNumber - 190) * 0.1f, (float)Height / ry * (frameNumber - 190) * 0.1f);
-                GL.DrawPixels(rx, ry, PixelFormat.Bgr, PixelType.UnsignedByte, Vframe_repository[cframe].frame_pix_data);
-                //no alpha here! 
-                 * */
 
                 if (blackout)
                 {
-                    //black out blocks
-                    //can be triggered with when the eye gaze is on a particular point
                     Random rnd = new Random();
                     //draw points near the gaze point
                     float block = (float)rx * 0.1f;
@@ -633,6 +640,7 @@ namespace testmediasmall
                         GL.Begin(PrimitiveType.Points);
                         GL.Vertex2(i, j);
                         GL.End();
+
                        */
 
                         //create histogram from bins (alternative to openCV)
@@ -719,17 +727,23 @@ namespace testmediasmall
                     }
                 }
 
+
                 //optical flow for each mask 
+                int[] maskPixCount = new int[5]; 
                 for (int j = 0; j < ry; ++j)
                 {
                     for (int i = 0; i < rx; ++i)
                     {
                         double diff = Math.Abs(px[j, i].V - px[j, i].V0);
                         Vector3d angle = new Vector3d(px[j, i].mx, px[j, i].my,0);
-
+                        maskPixCount[maskN(i, j)]++;
                         vf.maskOpticalFlowMovement[maskN(i, j)] += diff;
-                        vf.maskOpticalFlowAngle[maskN(i, j)] += angle;
+                        vf.maskOpticalFlowVector[maskN(i, j)] += angle;
                     }
+                }
+                for (int i = 0; i < 5; i++)
+                {
+                    vf.maskOpticalFlowMovement[i] = vf.maskOpticalFlowMovement[i] / (double)maskPixCount[i];
                 }
 
                 Vframe_repository.Add(vf);

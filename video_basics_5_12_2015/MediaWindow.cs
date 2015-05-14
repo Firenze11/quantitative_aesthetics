@@ -31,7 +31,9 @@ namespace testmediasmall
         public RGBHisto HistoG;
         public RGBHisto HistoB;
         public int frameNumber;
-        
+        public double optFlowAngle;
+        public List<double> maskOpticalFlowMovement = new List<double>();
+        public List<Vector3d> maskOpticalFlowVector = new List<Vector3d>();
     }
 
     public class MediaWindow
@@ -78,14 +80,16 @@ namespace testmediasmall
             ///////////////////////////////////////////////////////////////////////////////////END OF EYE TRACKER INIT
             //intialize Video capturing from primary camera [0] at a low resolution
             VideoIN.EnumCaptureDevices();
-
+            //test
             //...using webcam inputs
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             //...use video
+
             //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
             //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics_5_12_2015\_testVideo2.avi");
             
             Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
+
 
             System.Threading.Thread.Sleep(500);
             Video.SetResolution(360, 240);
@@ -109,16 +113,22 @@ namespace testmediasmall
         int pframe;  //frame number of previous clip during transition
         double pframeSlowPlayback;
 
-        int analyzedFrame;
         int newFrame;
+        byte[] gazeColor = new byte[3];
         //double minDomiHue = 10.0;
-        double domiHueDiff;
+        //double domiHueDiff;
 
         public VBitmap vbit;
 
-        bool iszooming = false;
-        int zoomduration = 100;
+        bool iszooming = false;//////////////////////////////////////////////////ZOOM CONTROL
+        int zoomduration = 60;
         int zoomcount = 0;
+        double zoomrate = 0.01;
+
+        bool isfading = false;//////////////////////////////////////////////////FADE CONTROL
+        int fadeduration = 40;
+        int fadecount = 0;
+        double faderate = 0.01;
         double[] focus = new double[2];
 
         public int sorter(VFrame a, VFrame b)
@@ -135,12 +145,14 @@ namespace testmediasmall
         }
 
         //selection logic for the new scenes
+
         public int skippedFrameRange = 10;
 
-        public int domiHueTransition(int analyzedFrame, bool complementary)
+        int domiHueTransition(int analyzedFrame, bool complementary)
         {
             int nf = 0;
             double minDomiHue = 10;
+            double domiHueDiff;
             
             for (int i = 0; i < Vframe_repository.Count; i++) 
             {
@@ -170,10 +182,11 @@ namespace testmediasmall
             return nf;
         }
 
-        public int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB)
+        int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB, bool complementary)
         {
             int nf = 0;
             float minColorQuality = 255;
+            float maxColorQuality = 0;
 
             byte colorQuality = gazeRGB.Max();
             int colorQualityIndex = gazeRGB.ToList().IndexOf(colorQuality); //pick between redness, greenness, blueness for the gaze
@@ -184,15 +197,134 @@ namespace testmediasmall
                 {
                     float frameColorQuality = Vframe_repository[i].maskAvgRGBColor[gazeMaskNum][colorQualityIndex];   //get colorQuality (red, blue, greenness) value in mask number matching the gaze
                     float colorQualityDiff = Math.Abs(colorQuality - frameColorQuality);
-                    if (colorQualityDiff < minColorQuality)
+
+                    if (complementary) //pick the frame with the least of the qualifier (redness, greenness, blueness)
+                    {
+                        if (colorQualityDiff > maxColorQuality)
+                        {
+                            maxColorQuality = colorQualityDiff;
+                            nf = i;
+                            //Console.WriteLine("nf: " + nf);
+                        }
+                    }
+                    else if (colorQualityDiff < minColorQuality)
                     {
                         minColorQuality = colorQualityDiff;
                         nf = i;
-                        Console.WriteLine("nf: " + nf);
+                        //Console.WriteLine("nf: " + nf);
                     }
                 }
             }
             return nf;
+        }
+
+        int opticalFlowTransition(int analyzedFrame, int gazeMaskNum, bool complementary)
+        {
+            int nf = 0;
+            double minTotalMovement = 100000;
+            double maxTotalMovement = 0;
+            double optFlowAngleDiff = 0.0;
+            double totalMovementDiff = 0.0;
+
+           for (int i = 0; i < Vframe_repository.Count; i++)
+            {
+                if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
+                {
+                    optFlowAngleDiff = Math.Abs((Vframe_repository[analyzedFrame].optFlowAngle) - Vframe_repository[i].optFlowAngle);
+                    totalMovementDiff = Math.Abs((Vframe_repository[analyzedFrame].totalMovement) - Vframe_repository[i].totalMovement);
+                    
+                    if (Math.Abs(optFlowAngleDiff) < (double)(Math.PI / 6)) //angle difference should be within +/- 30 degree
+                    {
+                        if (complementary) //pick the frame with the least of the qualifier (redness, greenness, blueness)
+                        {
+                            if (totalMovementDiff > maxTotalMovement)
+                            {
+                                maxTotalMovement = totalMovementDiff;
+                                nf = i;
+                                //Console.WriteLine("nf: " + nf);
+                            }
+                        }
+                        else if (totalMovementDiff < minTotalMovement)
+                        {
+                            minTotalMovement = totalMovementDiff;
+                            nf = i;
+                            //Console.WriteLine("nf: " + nf);
+                        }
+                    }
+                }
+            }
+            return nf;
+        }
+
+        int maskOpticalFlowTransition(int analyzedFrame, int gazeMaskNum, double gazeOptFlowMovement, Vector3d gazeOptFlowVector, bool complementary)
+        {
+            int nf = 0;
+            double minTotalMovement = 100000;
+            double maxTotalMovement = 0;
+            double optFlowAngleDiff = 0.0;
+            double totalMovementDiff = 0.0;
+
+            for (int i = 0; i < Vframe_repository.Count; i++)
+            {
+                if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
+                {
+                    Vector3d gazeAngle = gazeOptFlowVector.Normalized();
+                    Vector3d newFrameAngleVector = Vframe_repository[i].maskOpticalFlowVector[gazeMaskNum].Normalized();
+
+                    totalMovementDiff = Math.Abs(gazeOptFlowMovement - (Vframe_repository[i].maskOpticalFlowMovement[gazeMaskNum]/Vframe_repository[i].maskOpticalFlowMovement.Count));
+                    optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, newFrameAngleVector);    //1 if parallel
+
+                    if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be ~ +/- 30 degree
+                    {
+                        if (complementary) //show still image if lots of movement, etc 
+                        {
+                            if (totalMovementDiff > maxTotalMovement)
+                            {
+                                maxTotalMovement = totalMovementDiff;
+                                nf = i;
+                                //Console.WriteLine("nf: " + nf);
+                            }
+                        }
+                        else if (totalMovementDiff < minTotalMovement)
+                        {
+                            minTotalMovement = totalMovementDiff;
+                            nf = i;
+                            //Console.WriteLine("nf: " + nf);
+                        }
+                    }
+                    else if (Math.Abs(optFlowAngleDiff) > 0.5) //angle difference should be ~ +/- 30 degree
+                    {
+                        if (complementary) //show still image if lots of movement, etc 
+                        {
+                            if (totalMovementDiff > maxTotalMovement)
+                            {
+                                maxTotalMovement = totalMovementDiff;
+                                nf = i;
+                                //Console.WriteLine("nf: " + nf);
+                            }
+                        }
+                        else if (totalMovementDiff < minTotalMovement)
+                        {
+                            minTotalMovement = totalMovementDiff;
+                            nf = i;
+                            //Console.WriteLine("nf: " + nf);
+                        }
+                    }
+                    else nf = analyzedFrame; // no other frame matches then don't switch scenes
+                }
+            }
+            return nf;
+        }
+
+        int maskN(int _i, int _j)
+        {
+            int n = 0;
+            if (_j > 0.75) { n = 4; }
+            else if (_j < 0.25) { n = 3; }
+            else if (_i < 0.25) { n = 1; }
+            else if (_i > 0.75) { n = 2; }
+            else { n = 0; }
+            return n;
         }
 
         //animation function. This contains code executed 20 times per second.
@@ -251,42 +383,52 @@ namespace testmediasmall
                 if (iszooming) //post fixation period lasts for zoomduration frames
                 {
                     zoomcount++;
+                    if (isfading ) { fadecount++; }
+
                     if (zoomcount >= zoomduration)
                     {
                         //here write the code that is executed during the transition period [zoom, cut etc....]
                         iszooming = false;
+                        isfading = false;
+                        Console.WriteLine("zoom and fade stop");
+                    }
+                    if ((zoomcount >= zoomduration - fadeduration) && !isfading )
+                    {
+                        isfading = true;
+                        Console.WriteLine("fade start");
+                        fadecount = 0;
+
+                        cframe = newFrame;
+                        cframeSlowPlayback = newFrame;
                     }
                 }
                 else if (deviation < 0.25 && deviation > 0.000000001) //> 0.000000001 to avoid zooming when there's no gaze data (deviation = 0)
                 {//deviation just dropped below threshold
-                    iszooming = true;
-                    zoomcount = 0;
+                    if (0.0 < gazeMedium.X && 1.0 > gazeMedium.X && 0.0 < gazeMedium.Y && 1.0 > gazeMedium.Y)
+                    {
+                        iszooming = true;/////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        Console.WriteLine("zoom start");
+                        zoomcount = 0;
 
-                    focus[0] = gazeMedium.X * rx;
-                    focus[1] = gazeMedium.Y * ry;
+                        focus[0] = gazeMedium.X * rx;
+                        focus[1] = gazeMedium.Y * ry;
+                        //choose which scene to show
+                        //newFrame = domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+                        //byte[] gazeRGB = {10,10,10};
 
-                    //////////////////////////////////////////Frame reassignments
-                    pframe = cframe;
-                    //analyzedFrame = cframe; //this is the frame that will be analyzed for identifying next chunk of film
-                    pframeSlowPlayback = cframe;
+                        Console.WriteLine(focus[0] + " " + focus[1]);
 
-                    //choose which scene to show
-                    //newFrame = domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
-                    byte[] gazeRGB = {10,10,10};
-                    newFrame = maskAvgRGBTransition(cframe, num, gazeRGB);
+                        pframe = cframe; ///Frame reassignments
+                        pframeSlowPlayback = cframe;
 
-                    //iszooming = false;
-                    cframe = newFrame;
-                    cframeSlowPlayback = newFrame;
-
-                    //-----WHY FOR SECOND TIME?
-
-                    //domiHueTransition(minDomiHue, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
-                    
-                    //ZOOM IN ALL THE WAY TO A PIXEL
+                        //choose which scene to show (just remember it for now, show it later)
+                        newFrame = maskOpticalFlowTransition(cframe, num, gazeOptFlowMovement, gazeOptFlowVector, true);
+                        //newFrame = maskAvgRGBTransition(cframe, num, gazeColor, true);
+                        //newFrame = domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue   
+                    }
                 }
-                else
-                {//normal viewing period 
+                else//normal viewing period 
+                {
                     //write here the code that is executed during normal viewing
                 }
             }
@@ -305,8 +447,11 @@ namespace testmediasmall
                 cframe = (int) Math.Floor(cframeSlowPlayback);
 
                 //zoom transition, slower frame rate
-                pframeSlowPlayback += 0.2;
-                pframe = (int)Math.Floor(pframeSlowPlayback);
+                if (isfading)
+                {
+                    pframeSlowPlayback += 0.2;
+                    pframe = (int)Math.Floor(pframeSlowPlayback);
+                }
 
                 if (cframe >= Vframe_repository.Count)
                 {
@@ -322,7 +467,6 @@ namespace testmediasmall
 
                 //zoomMode false for testing blackout******************************************************************
                 bool blackout = true;
-                double zoomrate = 0.05;
 
                 GL.ClearColor(1.0f, 0.6f, 0.6f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -333,29 +477,35 @@ namespace testmediasmall
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////interaction
                 double x0, y0, w, h, a;
 
-                x0 = 0.0;
-                y0 = 0.0;
-                w = rx;
-                h = ry;
+                if (!iszooming || (iszooming && isfading))
+                {
+                    x0 = 0.0;
+                    y0 = 0.0;
+                    w = rx;
+                    h = ry;
 
-                byte[, ,] px = Vframe_repository[cframe].frame_pix_data;
-                vbit.FromFrame(px);
-                vbit.Draw(x0, y0, w, h, 1.0);
-
+                    byte[, ,] px = Vframe_repository[cframe].frame_pix_data;
+                    vbit.FromFrame(px);
+                    vbit.Draw(x0, y0, w, h, 1.0);
+                }
+                
                 if (iszooming)
                 {
-                    double s = 1.0 + zoomrate * cframe;
+                    double s = 1.0 + zoomrate * zoomcount;
                     //x0 = Math.Min(rx * 0.5 - focus[0] * s, 0.0); // max and min are used to constrain the frame in view port (no pink!)
                     //y0 = Math.Min(ry * 0.5 - focus[1] * s, 0.0);
                     x0 = Math.Min(focus[0] * (1.0-s), 0.0); // max and min are used to constrain the frame in view port (no pink!)
                     y0 = Math.Min(focus[1] * (1.0-s), 0.0);
                     w = Math.Max(rx * s, rx - x0);
                     h = Math.Max(ry * s, ry - y0);
-                    //a = 1.0 - ((double) zoomcount) / ((double)zoomduration);
+                    if (isfading)
+                        a = 1.0 - ((double)fadecount) / ((double)fadeduration);
+                    else
+                        a = 1.0;
 
                     byte[, ,] pre_px = Vframe_repository[pframe].frame_pix_data;
                     vbit.FromFrame(pre_px);
-                    vbit.Draw(x0, y0, w, h, 1.0);
+                    vbit.Draw(x0, y0, w, h, a);
                 }
                 /*/////////////////////////////////////////////////////////////////original code for drawing vframe
                 GL.RasterPos2(0.0, 0.0); //bottom left
@@ -388,31 +538,47 @@ namespace testmediasmall
                     //GL.Vertex2(50, 10);
                     //GL.Vertex2(0, 40);
                     //GL.End();
+                    double r = 0.0;
+                    double g = 0.0;
+                    double b = 0.0;
+                    //if (iszooming)
+                    //{
+                    //    r = Vframe_repository[cframe].frame_pix_data[(int)focus[1], (int)focus[0], 2] / 255.0;
+                    //    g = Vframe_repository[cframe].frame_pix_data[(int)focus[1], (int)focus[0], 1] / 255.0;
+                    //    b = Vframe_repository[cframe].frame_pix_data[(int)focus[1], (int)focus[0], 0] / 255.0;
+                    //}
+                        r = Vframe_repository[cframe].frame_pix_data[(int)(gazeMedium.Y) * ry, (int)gazeMedium.X * rx, 2] ;
+                        g = Vframe_repository[cframe].frame_pix_data[(int)(gazeMedium.Y) * ry, (int)gazeMedium.X * rx, 1] ;
+                        b = Vframe_repository[cframe].frame_pix_data[(int)(gazeMedium.Y) * ry, (int)gazeMedium.X * rx, 0] ;
+                    //}
+                        gazeColor[0] = (byte)r;
+                        gazeColor[1] = (byte)g;
+                        gazeColor[2] = (byte)b;
 
                     GL.PointSize(30.0f);///////////////////////////////////////////////////////////////////////////VISUALIZE GAZE
-                    GL.Color4(0.0, 1.0, 1.0, 1);
+                    GL.Color4(r / 255.0, g / 255.0, b / 255.0, 1);
                     GL.Begin(PrimitiveType.Points);
-                    GL.Vertex2(focus[0], focus[1] );
+                    //GL.Vertex2(focus[0], focus[1] );
+                    GL.Vertex2(gazeMedium.X * rx, gazeMedium.Y * ry);
                     GL.End();
-                    //Console.WriteLine(focus[0] + ", "+focus[1]);
 
-                    GL.PointSize(block);
-                    GL.Begin(PrimitiveType.Points);
-                    for (int i = 0; i < gazeL.Count; i += 30)
-                    {
-                        //visualize the gaze
+                    //GL.PointSize(block);
+                    //GL.Begin(PrimitiveType.Points);
+                    //for (int i = 0; i < gazeL.Count; i += 30)
+                    //{
+                    //    //visualize the gaze
 
-                        GL.Color4(0.0, 0.0, 0.0, 1);
-                        GL.Vertex2(gazeL[i].X * rx, gazeL[i].Y * ry);
+                    //    GL.Color4(0.0, 0.0, 0.0, 1);
+                    //    GL.Vertex2(gazeL[i].X * rx, gazeL[i].Y * ry);
 
-                        // visualize the blackout points
-                        // GL.PointSize(block);
-                        // GL.Color4(1.0, 0.0, 0.0, alpha);
-                        // GL.Begin(PrimitiveType.Points);
-                        // GL.Vertex2(gazeL[i].X + (blockPoint.X * blockRadius) / sampleRadius, gazeL[i].Y + (blockPoint.Y * blockRadius) / sampleRadius);
-                        //  GL.End();
-                    }
-                    GL.End();
+                    //    // visualize the blackout points
+                    //    // GL.PointSize(block);
+                    //    // GL.Color4(1.0, 0.0, 0.0, alpha);
+                    //    // GL.Begin(PrimitiveType.Points);
+                    //    // GL.Vertex2(gazeL[i].X + (blockPoint.X * blockRadius) / sampleRadius, gazeL[i].Y + (blockPoint.Y * blockRadius) / sampleRadius);
+                    //    //  GL.End();
+                    //}
+                    //GL.End();
 
                     if (alpha < 1.0)
                     {
@@ -444,6 +610,8 @@ namespace testmediasmall
                 GL.LoadIdentity();
                 GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
+                vbit.Draw(0.0, 0.0, rx, ry, 1.0);
+
                 //initialization to create histogram from bins (alternative to openCV)
                 /*List<int> RGB_bin = new List<int>();
                 for (int i = 0; i < 10; i++)
@@ -452,22 +620,21 @@ namespace testmediasmall
                 }
                 */
 
-                vbit.Draw(0.0, 0.0, rx, ry, 1.0);
-                double totalMovement = 0.0;
-                
+                /*
                 for (int j = 0; j < ry; ++j)
                 {
                     for (int i = 0; i < rx; ++i)
                     {
-                        //draw screen
+                        //draw screen with pixels
                         //GL.PointSize((float)(1.0 + Video.Pixels[j, i].V * 20.0));
+                        /*
                         GL.PointSize((float)(rx));
-                        //draw pixels
                         GL.Color4(px[j, i].R, px[j, i].G, px[j, i].B, 1.0);
                         GL.Begin(PrimitiveType.Points);
                         GL.Vertex2(i, j);
                         GL.End();
-                       
+                       */
+
                         //create histogram from bins (alternative to openCV)
                         /*
                         double R = Video.Pixels[j, i].R;
@@ -485,32 +652,16 @@ namespace testmediasmall
                                 RGB_bin[k] += 1;
                                 binWidth++;
                             }
-                        }*/
+                        }
                     }
-                }
+                }*/
+        
                 sw.WriteLine();
                 frameNumber++;
 
                 RGBColor.FrameUpdate(px, rx, ry);
 
-                for (int j = 0; j < ry; ++j)
-                {
-                    for (int i = 0; i < rx; ++i)
-                    {
-                        //optical flow 
-                        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
-                        //angle 
-                        double optFlowAngle = Math.Atan2(px[j, i].mx, px[j, i].my);
-                        totalMovement += diff;
-
-                        //draw movement 
-                        //GL.PointSize((float)(diff * 10.0));
-                        //GL.Color4(1.0, 0.0, 0.0, 0.5);
-                        //GL.Begin(PrimitiveType.Points);
-                        //GL.Vertex2(i * Width/rx, j * Height/ry);
-                        //GL.End();
-                    }
-                }
+                
 
                 VFrame vf = new VFrame();
                 //vf.frame_pix_data = (byte[, ,])RGBColor.imgdataBGR.Clone();
@@ -535,8 +686,7 @@ namespace testmediasmall
                 vf.HistoR = RGBColor.HistoR;
                 vf.HistoG = RGBColor.HistoG;
                 vf.HistoB = RGBColor.HistoB;
-                vf.totalMovement = totalMovement;
-
+                
                 double cBlue = CvInvoke.cvCompareHist(vf.HistoR.Histogram, vf.HistoB.Histogram, Emgu.CV.CvEnum.HISTOGRAM_COMP_METHOD.CV_COMP_CORREL);
                 //////////////////////////////////////////////////////////////////////////////color palette code
                 ColorQuant ColorQuantizer = new ColorQuant();
@@ -545,32 +695,42 @@ namespace testmediasmall
                 Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);   //sort intialCMap by hue
                 var a = ColorQuantizer.TranslateHSV(DiffColorMap[0]);
                 vf.domiHue = a[0];
-               
                 ////////////////////////////////////////////////////////////////////////end of color palette cod
 
+                for (int j = 0; j < ry; ++j)
+                {
+                    for (int i = 0; i < rx; ++i)
+                    {
+                        //optical flow 
+                        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
+                        vf.totalMovement += diff;
+                        
+                        //average optical flow angle 
+                        double angle = Math.Atan2(px[j, i].mx, px[j, i].my);
+                        vf.optFlowAngle += angle;
+                        vf.optFlowAngle /= (rx * ry);
 
-                ///////////////////////////////////////////////////////////////////optical flow
-                //double totalMovement = 0.0;
-                //for (int j = 0; j < ry; ++j)
-                //{
-                //    for (int i = 0; i < rx; ++i)
-                //    {
-                //        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
-                //        GL.PointSize((float)(diff * 50.0));
-                //        GL.Color4(1.0, 0.0, 0.0, 0.5);
-                //        GL.Begin(PrimitiveType.Points);
-                //        GL.Vertex2(i * Width / rx, j * Height / ry);
-                //        GL.End();
+                        //draw movement 
+                        GL.PointSize((float)(diff * 10));
+                        GL.Color4(1.0, 0.0, 0.0, 0.5);
+                        GL.Begin(PrimitiveType.Points);
+                        GL.Vertex2(i, j);
+                        GL.End();
+                    }
+                }
 
-                //        //angle 
-                //        double optFlowAngle = Math.Atan2(px[j, i].mx, px[j, i].my);
-                //        // optFlowAngle +=  
+                //optical flow for each mask 
+                for (int j = 0; j < ry; ++j)
+                {
+                    for (int i = 0; i < rx; ++i)
+                    {
+                        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
+                        Vector3d angle = new Vector3d(px[j, i].mx, px[j, i].my,0);
 
-                //        totalMovement += diff;
-                //    }
-                //}
-                //vf.totalMovement = totalMovement;
-                /////////////////////////////////////////////////////////////end of optical flow
+                        vf.maskOpticalFlowMovement[maskN(i, j)] += diff;
+                        vf.maskOpticalFlowAngle[maskN(i, j)] += angle;
+                    }
+                }
 
                 Vframe_repository.Add(vf);
 

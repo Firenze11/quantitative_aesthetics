@@ -41,19 +41,19 @@ namespace testmediasmall
         public double MouseX = 0.0; //location of the mouse along X
         public double MouseY = 0.0; //location of the mouse along Y
 
-        double alpha = 0.0;
+        //double alpha = 0.0;
         EyeHelper EyeTracker = new EyeHelperTOBII();/////////////////////////////////////////////////////////EYE TRACKER
-        List<Vector3d> gazeL = new List<Vector3d>();/////////////////////////////////////////////////////////EYE GAZE LIST
-        double deviation = 0;
 
-        List<VFrame> Vframe_repository = new List<VFrame>();
+        public static List<VFrame> Vframe_repository = new List<VFrame>();
+        public static List<Screen> Screens = new List<Screen>();
+
         ColorAnalysis RGBColor = new ColorAnalysis();
         public int frameNumber;
 
         // An image object to hold the latest camera frame
-        VBitmap Videoimage = new VBitmap(120, 120);
+        VBitmap Videoimage;// = new VBitmap(120, 120);
         //this object represents a single video input device [camera or video file]
-        VideoIN Video = new VideoIN();
+        public static VideoIN Video = new VideoIN();
 
         StreamWriter sw;
         //C_View is a class defined in the C_geometry.cs file and is just a helper object for managing viewpoint / tragetpoint camera mechanics
@@ -95,54 +95,28 @@ namespace testmediasmall
         }
 
         //window property
-        public int rx = 0;
-        public int ry = 0;
-        public VBitmap[] vbit = new VBitmap[2];
+        public static int rx = 0;
+        public static int ry = 0;
 
         //gaze property
         int lr = -1; //focusing on left or right image
         byte[] gazeColor = new byte[3];
-        Vector3d dpointNorm = new Vector3d();
-        Vector3d gazeMedium = new Vector3d(0.25, 0.25, 0.0);
-        Vector3d projG = new Vector3d();//projected gazemedium
-        Vector3d focus = new Vector3d();
-        Vector3d projF = new Vector3d();//projected focus
-        int num;  //get mask number of the gaze
+        public static Vector3d dpointNorm = new Vector3d();
 
         //global control
-        bool playbackmode = false;
-        int maxframes = 100;
-        int skippedFrameRange = 10;
-        bool blackout = true;
-        int lastf = 8; //number of frames to calculate the gazeMedium
-
-        //frame control
-        int[] cframe = new int[2];    //current frame
-        double[] cframeSlowPlayback = new double[2];  //reduce the frame rate for playback
-        int[] pframe = new int[2];  //frame number of previous clip during transition
-        double[] pframeSlowPlayback = new double[2];
-        int[] newFrame = new int[2];
-
-        //on/off control
-        bool[] ison = new bool[2];
-
-        //zoom control
-        bool[] iszooming = new bool[2];
-        int[] zoomcount = new int[2];
-        int zoomduration = 60;
-        double zoomrate = 0.01;
-
-        //fade control
-        bool[] isfading = new bool[2];
-        int[] fadecount = new int[2];
-        int fadeduration = 40;
-        double faderate = 0.01;
-
-        int other(int _lr)
+        static bool playbackmode = false;
+        static int maxframes = 180;
+        static int skippedFrameRange = 10;
+        static bool blackout = true;
+        static int screenCount = 3;
+        
+        public static int other(int n)
         {
-            if (_lr == 0) { return 1; }
-            else if (_lr == 1) { return 0; }
-            else { return -1; }
+            //if (_lr == 0) { return 1; }
+            //else if (_lr == 1) { return 0; }
+            //else { return -1; }
+            if (n < Screens.Count -1) { return n + 1; }
+            else { return 0; }
         }
 
         public int sorter(VFrame a, VFrame b)
@@ -158,7 +132,7 @@ namespace testmediasmall
             //return aa.CompareTo(bb);
         }
 
-        int domiHueTransition(int analyzedFrame, bool complementary)
+        public static int domiHueTransition(int analyzedFrame, bool complementary)
         {
             int nf = 0;
             double minDomiHue = 10;
@@ -192,7 +166,7 @@ namespace testmediasmall
             return nf;
         }
 
-        public int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB)
+        public static int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB)
         {
             int nf = 0;
             float minColorQuality = 255;
@@ -210,254 +184,45 @@ namespace testmediasmall
                     {
                         minColorQuality = colorQualityDiff;
                         nf = i;
-                        //Console.WriteLine("nf: " + nf);
                     }
                 }
             }
             return nf;
         }
 
-        Vector3d projectedGaze(Vector3d gazeInput, Vector2d xyscale, out int leftright)
-        {
-            Vector3d  pg = new Vector3d ();
-            if (0.0 < gazeInput.X && (0.5 * xyscale.X > gazeInput.X) && (0.25 * xyscale.Y < gazeInput.Y) && (0.75 * xyscale.Y > gazeInput.Y))//left screen
-            {
-                pg.X = gazeInput.X * 2.0;
-                pg.Y = (gazeInput.Y - 0.25 * xyscale.Y) * 2.0;
-                pg.Z = 0.0;
-                leftright = 0;
-            }
-            else if ((0.5 * xyscale.X < gazeInput.X) && (xyscale.X > gazeInput.X) && (0.25 * xyscale.Y < gazeInput.Y) && (0.75 * xyscale.Y > gazeInput.Y))//right screen
-            {
-                pg.X = (gazeInput.X - 0.5 * xyscale.X) * 2.0;
-                pg.Y = (gazeInput.Y - 0.25 * xyscale.Y) * 2.0;
-                pg.Z = 0.0;
-                leftright = 1;
-            }
-            else { leftright = -1; }
-            return pg;
-        }
-
-        void drawVbit(int sn)
-        {
-            if (!ison[sn]) { return; }
-            //Console.WriteLine(sn + " is drawing");
-            double x0, y0, w, h, a;
-            double bottom, left;
-            if (sn == 0) { left = 0.0; bottom = 0.25 * ry; }
-            else { left = 0.5 * rx; bottom = 0.25 * ry; }
-
-            if (!iszooming[sn] || (iszooming[sn] && isfading[sn]))
-            {
-                x0 = left;
-                y0 = bottom;
-                w = rx * 0.5;
-                h = ry * 0.5;
-
-                byte[, ,] px = Vframe_repository[cframe[sn]].frame_pix_data;
-                vbit[sn].FromFrame(px);
-                vbit[sn].Draw(x0, y0, w, h, 1.0);
-            }
-
-            if (iszooming[sn])
-            {
-                double s = 1.0 + zoomrate * zoomcount[sn];
-                //x0 = Math.Min(rx * 0.5 - focus[0] * s, 0.0); // max and min are used to constrain the frame in view port (no pink!)
-                //y0 = Math.Min(ry * 0.5 - focus[1] * s, 0.0);
-                x0 = Math.Min(focus.X*(1.0 - s) + left*s, left); // max and min are used to constrain the frame in view port (no pink!)
-                y0 = Math.Min(focus.Y * (1.0 - s) + bottom*s, bottom);
-                w = Math.Max(rx * s * 0.5, rx * 0.5 - x0);
-                h = Math.Max(ry * s * 0.5, ry * 0.5 - y0);
-                if (isfading[sn])
-                    a = 1.0 - ((double)fadecount[sn]) / ((double)fadeduration);
-                else
-                    a = 1.0;
-
-                byte[, ,] pre_px = Vframe_repository[pframe[sn]].frame_pix_data;
-                vbit[sn].FromFrame(pre_px);
-                vbit[sn].Draw(x0, y0, w, h, a);
-            }
-        }
-
         //animation function. This contains code executed 20 times per second.
         public void OnFrameUpdate()
         {
-            for (int sn = 0; sn < 2; sn++)
-            {
-                //newFrame = cframe;
-                if (Video.IsVideoCapturing && vbit[sn] == null)// && ison[sn])
-                {
-                    vbit[sn] = new VBitmap(Video.ResX, Video.ResY);
-                }
-            }
             if (Vframe_repository.Count >= maxframes && !playbackmode)
             {
                 playbackmode = true;
-                ison[0] = true;
+                if (Video.IsVideoCapturing && Screens.Count == 0)
+                {
+                    for (int i = 0; i < screenCount; i++)
+                    {
+                        double l = (double)i * (double)rx / (double)screenCount;
+                        double b = 0.5 * (double)ry * (1.0 - (1.0 / (double)screenCount));
+                        double w = (double)rx / (double)screenCount;
+                        double h = (double)ry / (double)screenCount;
+                        Screens.Add(new Screen(i, l, b, w, h));
+
+                    }
+                }
+                Screens[0].ison = true;
             }
             if (playbackmode)
             {
                 /////////////////////////////////////////////////////////////////////////////////////////////gaze calculation
-                /* mask
-                |  --     3    --  |
-                |   1  |  0  |  2  |
-                |  --     4    --  |
-                */
+                
                 Vector3d lnorm = new Vector3d(EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.X,
                                               EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.Y, 0.0);
                 Vector3d rnorm = new Vector3d(EyeTracker.EyeRightSmooth.GazePositionScreenNorm.X,
                                               EyeTracker.EyeRightSmooth.GazePositionScreenNorm.Y, 0.0);
                 dpointNorm = (lnorm + rnorm) * 0.5;
-                dpointNorm.Y = 1.0 - dpointNorm.Y;
+                dpointNorm.Y = (1.0 - dpointNorm.Y) * ry;
+                dpointNorm.X = (1.0 - dpointNorm.X) * rx;
 
-                //dpointNorm = new Vector3d(Control.MousePosition.X, Control.MousePosition.Y, 0.0);////////CHANGE IT!!
-                dpointNorm = new Vector3d(MouseX / (double)Width, MouseY / (double)Height, 0.0);////////CHANGE IT!!
-                //dpointNorm = new Vector3d(MouseX, MouseY, 0.0);////////CHANGE IT!!
-                Console.WriteLine("dpointNorm: " + dpointNorm + ", " + Width + ", " + Height);
-                gazeL.Add(dpointNorm);
-                if (gazeL.Count > 300) { gazeL.RemoveAt(0); }
-                //if (gazeL.Count == 1) { gazeMedium = dpointNorm; }
-                //else { gazeMedium = 0.5 * gazeMedium + 0.5 * dpointNorm; }
-
-
-
-                if (dpointNorm.Y > 0.75) { num = 4; }
-                else if (dpointNorm.Y < 0.25) { num = 3; }
-                else if (dpointNorm.X < 0.25) { num = 1; }
-                else if (dpointNorm.X > 0.75) { num = 2; }
-                else { num = 0; }
-
-                if (gazeL.Count >= lastf)
-                {
-                    gazeMedium = new Vector3d(0.0, 0.0, 0.0);
-                    deviation = 0;
-                    for (int i = 0; i < lastf; i++) { gazeMedium += gazeL[gazeL.Count - i - 1]; }
-                    gazeMedium *= (1.0 / lastf);
-                    for (int i = 0; i < lastf; i++) { deviation += 1000 * (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared; } //"standard dev"
-
-                    projG = projectedGaze(gazeMedium, new Vector2d(1.0, 1.0), out lr); //from the begining, determine which screen is looked at
-
-                    double r, g, b;
-                    if (lr != -1)
-                    {
-                        //r = vbit[lr].Pixels[(int)(1.0 - dpointNorm.Y) * ry, (int)dpointNorm.X * rx].R;
-                        //g = vbit[lr].Pixels[(int)(1.0 - dpointNorm.Y) * ry, (int)dpointNorm.X * rx].G;
-                        //b = vbit[lr].Pixels[(int)(1.0 - dpointNorm.Y) * ry, (int)dpointNorm.X * rx].B;
-                        r = vbit[lr].Pixels[(int)projG.Y, (int)projG.X].R * 255.0;
-                        g = vbit[lr].Pixels[(int)projG.Y, (int)projG.X].G * 255.0;
-                        b = vbit[lr].Pixels[(int)projG.Y, (int)projG.X].B * 255.0;
-                    }
-                    else
-                    {
-                        r = 255; g = 255; b = 255;
-                    }
-                    gazeColor[0] = (byte)r;
-                    gazeColor[1] = (byte)g;
-                    gazeColor[2] = (byte)b;
-
-                    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////procedure control for each screen
-                    for (int sn = 0; sn < 2; sn++)
-                    {
-                        if (ison[sn]) // sn = screen number (0 or 1)
-                        {
-                            ///////////////////////////////////////////////////////////////////////////////////////////frame update
-                            cframeSlowPlayback[sn] += 0.2;
-                            cframe[sn] = (int)Math.Floor(cframeSlowPlayback[sn]);
-                            //zoom transition, slower frame rate
-                            if (isfading[sn])
-                            {
-                                pframeSlowPlayback[sn] += 0.2;
-                                pframe[sn] = (int)Math.Floor(pframeSlowPlayback[sn]);
-                            }
-                            if (cframe[sn] >= Vframe_repository.Count)
-                            {
-                                cframe[sn] = 0;
-                                cframeSlowPlayback[sn] = 0;
-                            }
-                            if (pframe[sn] >= Vframe_repository.Count)
-                            {
-                                pframe[sn] = 0;
-                                pframeSlowPlayback[sn] = 0;
-                            }
-
-                            ///////////////////////////////////////////////////////////////////////////////////////////zoom/fade update
-                            if (iszooming[sn]) //post fixation period lasts for zoomduration frames
-                            {
-                                zoomcount[sn]++;
-                                if (isfading[sn]) { fadecount[sn]++; }
-                                if (zoomcount[sn] >= zoomduration)
-                                {
-                                    //here write the code that is executed during the transition period [zoom, cut etc....]
-                                    iszooming[sn] = false;
-                                    isfading[sn] = false;
-                                    Console.WriteLine("zoom and fade stop: "+sn);
-                                }
-                                if ((zoomcount[sn] >= zoomduration - fadeduration) && !isfading[sn])
-                                {
-                                    isfading[sn] = true;
-                                    Console.WriteLine("fade start: " + sn);
-
-                                    ison[other(sn)] = true;
-                                    Console.WriteLine("is on: " + other(sn));
-                                    cframe[other(sn)] = cframe [sn];
-                                    cframeSlowPlayback[other(sn)] = cframe [sn];
-
-                                    fadecount[sn] = 0;
-                                    cframe[sn] = newFrame[sn];
-                                    cframeSlowPlayback[sn] = newFrame[sn];
-                                }
-                            }
-
-
-                            else if (deviation < 0.25 && deviation > 0.000000001 && lr == sn) //avoid zooming when there's no gaze data (dev = 0)
-                            {//deviation just dropped below threshold
-                                focus = gazeMedium; //unlike projG, focus remains stable during zooming process
-                                focus.X *= rx;
-                                focus.Y *= ry;
-                                projF = projG; //projected focus
-                                projF.X *= rx;
-                                projF.Y *= ry;
-
-                                Console.WriteLine("projF: " + projF.X + ", " + projF.Y);
-                                iszooming[sn] = true;
-                                Console.WriteLine("zoom start: " + sn);
-                                zoomcount[sn] = 0;
-
-                                pframe[sn] = cframe[sn]; ///Frame reassignments
-                                pframeSlowPlayback[sn] = cframe[sn];
-
-                                //choose which scene to show (just remember it for now, show it later)
-                                newFrame[sn] = maskAvgRGBTransition(cframe[sn], num, gazeColor);
-                                //newFrame = domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue  
-
-
-                                //////////////////////////////////////////////////////////////////////////////
-                                //double r, g, b;
-                                //if (lr != -1)
-                                //{
-                                //    //r = vbit[lr].Pixels[(int)(1.0 - dpointNorm.Y) * ry, (int)dpointNorm.X * rx].R;
-                                //    //g = vbit[lr].Pixels[(int)(1.0 - dpointNorm.Y) * ry, (int)dpointNorm.X * rx].G;
-                                //    //b = vbit[lr].Pixels[(int)(1.0 - dpointNorm.Y) * ry, (int)dpointNorm.X * rx].B;
-                                //    r = vbit[lr].Pixels[(int)projF.Y, (int)projF.X].R;
-                                //    g = vbit[lr].Pixels[(int)projF.Y, (int)projF.X].G;
-                                //    b = vbit[lr].Pixels[(int)projF.Y, (int)projF.X].B;
-                                //}
-                                //else
-                                //{
-                                //    r = 255; g = 255; b = 255;
-                                //}
-                                //gazeColor[0] = (byte)r;
-                                //gazeColor[1] = (byte)g;
-                                //gazeColor[2] = (byte)b;
-                                //////////////////////////////////////////////////////////////////////////////
-                            }
-                            else//normal viewing period 
-                            { //write here the code that is executed during normal viewing
-                            }
-                        }
-                    }
-                }
-
+                dpointNorm = new Vector3d(MouseX / (double)Width * (double)rx, MouseY / (double)Height*(double)ry, 0.0);////////CHANGE IT!!
 
                 GL.ClearColor(0.0f, 0.6f, 0.6f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -465,25 +230,30 @@ namespace testmediasmall
                 GL.LoadIdentity();
                 GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
+                for (int i = 0; i < Screens.Count; i++)
+                {
+                    Screens[i].OnTimeLapse(dpointNorm);
+                }
+
                 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////drawing for each screen
                 bool hasZoomingScreen = false;
-                for (int sn = 0; sn < 2; sn++)
+                for (int i = 0; i < Screens.Count; i++)
                 {
-                    if (iszooming[sn]) //the zooming vbit must be drawn first
+                    if (Screens[i].iszooming) //the zooming vbit must be drawn first
                     {
                         hasZoomingScreen = true;
-                        drawVbit(sn);
-                        drawVbit(other(sn));
+                        Screens[i].DrawVbit();
+                        Screens[other(i)].DrawVbit();
                         break;
                     }
                 }
                 if (!hasZoomingScreen)
                 {
-                    for (int sn = 0; sn < 2; sn++)
+                    for (int i = 0; i < 2; i++)
                     {
-                        if (ison[sn]) //the zooming vbit must be drawn first
+                        if (Screens[i].ison) //the zooming vbit must be drawn first
                         {
-                            drawVbit(sn);
+                            Screens[i].DrawVbit();
                         }
                     }
                 }
@@ -491,7 +261,7 @@ namespace testmediasmall
                 GL.Color4(gazeColor[0] / 255.0, gazeColor[1] / 255.0, gazeColor[2] / 255.0, 1.0);
                 GL.Begin(PrimitiveType.Points);
                 //GL.Vertex2(focus[0], focus[1] );
-                GL.Vertex2(gazeMedium.X * rx, gazeMedium.Y * ry);
+                GL.Vertex2(dpointNorm.X * rx, dpointNorm.Y * ry);
                 GL.End();
 
                 if (blackout)
@@ -503,36 +273,10 @@ namespace testmediasmall
                     int sampleRadius = 50;
                     Vector3d blockPoint = new Vector3d(rnd.Next(0, sampleRadius), rnd.Next(0, sampleRadius), 0.0);
 
-                    //GL.PointSize(block);
-                    //GL.Begin(PrimitiveType.Points);
-                    //for (int i = 0; i < gazeL.Count; i += 30)
-                    //{
-                    //    //visualize the gaze
-
-                    //    GL.Color4(0.0, 0.0, 0.0, 1);
-                    //    GL.Vertex2(gazeL[i].X * rx, gazeL[i].Y * ry);
-
-                    //    // visualize the blackout points
-                    //    // GL.PointSize(block);
-                    //    // GL.Color4(1.0, 0.0, 0.0, alpha);
-                    //    // GL.Begin(PrimitiveType.Points);
-                    //    // GL.Vertex2(gazeL[i].X + (blockPoint.X * blockRadius) / sampleRadius, gazeL[i].Y + (blockPoint.Y * blockRadius) / sampleRadius);
-                    //    //  GL.End();
-                    //}
-                    //GL.End();
-
-                    if (alpha < 1.0)
-                    {
-                        alpha += 0.002;
-                    }
-                    else
-                    {
-                        alpha *= 0.8;
-                    }
                 }
                 ///////////////////////////////////////////////////////////////////////////////////////////////////end of interaction
 
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////draw black cover
+                //////////////////////////////////////////////////////////////////////////////////////////////////////.//////draw black cover
                 GL.Color4(0.0, 0.0, 0.0, 1.0);
                 GL.Begin(PrimitiveType.Quads);
                 GL.Vertex2(0, 0);
@@ -547,9 +291,6 @@ namespace testmediasmall
                 GL.End();
             }
 
-
-
-
             else
             {
                 if (!Video.IsVideoCapturing) return; //make sure that there is a camera connected and running
@@ -559,7 +300,8 @@ namespace testmediasmall
                 VideoPixel[,] px = Video.Pixels;
                 rx = Video.ResX;
                 ry = Video.ResY;
-                vbit[0].FromVideo(Video);
+                Videoimage = new VBitmap(rx, ry);
+                Videoimage.FromVideo(Video);
 
                 GL.ClearColor(0.6f, 0.6f, 0.6f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -577,7 +319,7 @@ namespace testmediasmall
                 }
                 */
 
-                vbit[0].Draw(0.0, 0.0, rx, ry, 1.0);
+                Videoimage.Draw(0.0, 0.0, rx, ry, 1.0);
                 double totalMovement = 0.0;
 
                 for (int j = 0; j < ry; ++j)
@@ -677,84 +419,6 @@ namespace testmediasmall
                 /////////////////////////////////////////////////////////////end of optical flow
 
                 Vframe_repository.Add(vf);
-
-                //checking past 20 frames
-                /*GL.PixelZoom(0.5f, 0.5f);
-                for (int k = 0; k < 20 && k < Vframe_repository.Count; ++k)
-                {
-                    VFrame f = Vframe_repository[Vframe_repository.Count - 1 - k];
-                    GL.RasterPos2(k * 1.0, 10.0);//////////////////////////////////////////////////////////////////////
-                    GL.DrawPixels(rx, ry, PixelFormat.Bgr, PixelType.UnsignedByte, f.frame_pix_data);
-                }
-                */
-
-                //for splitting screen
-                /*
-                int nx = 4;
-                int ny = 4;
-                int sub_x = rx / nx;
-                int sub_y = ry / ny;
-                */
-
-                //split screen
-                /*for (int j = 0; j < ny; ++j)
-                {
-                    //for (int i = 0; i < nx; ++i)
-                    {
-                        GL.Color4(0.0, 1.0, 1.0, 1.0);
-                        GL.Begin(PrimitiveType.LineStrip);
-                        GL.LineWidth(1.0f);
-                        for (int k = 0; k < ry; k++)
-                        {  
-                            GL.Vertex2(sub_x, k); 
-                        }
-                        GL.End();
-                    
-                        //RGBColor.FrameUpdate(px, sub_x, sub_y);
-                        sub_x+=sub_x;
-                    }
-                    GL.Color4(0.0, 1.0, 1.0, 1.0);
-                    GL.Begin(PrimitiveType.LineStrip);
-                    GL.LineWidth(1.0f);
-                    for (int k = 0; k < ry; k++)
-                    {
-                        GL.Vertex2(k, sub_y);
-                    }
-                    GL.End();
-                    sub_y+=sub_y;
-                }*/
-
-                //make channel for A channel 
-
-                //int imgdataBGR_int = RGBColor.imgdataBGR;
-                //int imgdataBGRA_int = BitConverter.ToInt32(RGBColor.imgdataBGR);
-
-                /*byte[, ,] frameData = new byte[frameNumber,RGBColor.imgdataBGR, 3];
-
-                if (frameData == null)
-                {
-                    frameData = new byte[1,3,3];
-                }
-                 * */
-
-
-
-
-                //.............................................................render video image 
-                //update the video image and draw it [just for debugging now]
-                // Videoimage.FromVideo(Video);                    
-                //Videoimage.Draw(-1.0, -1.0, 2.0, 2.0, 0.2);
-
-                //GL.Color4(1.0, 1.0, 1.0, 1.0);
-
-                /*for (int i = 0; i < Video.ResX; ++i)
-                {
-                    GL.PointSize((float)(1.0+Video.Pixels[0,i].V*20.0));
-                    GL.Begin(BeginMode.Points);
-                    GL.Vertex2(i, 0.0);
-                    GL.End();
-                }*/
-
             }
         }
     }

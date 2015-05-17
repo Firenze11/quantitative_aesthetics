@@ -31,7 +31,10 @@ namespace testmediasmall
         public RGBHisto HistoG;
         public RGBHisto HistoB;
         public int frameNumber;
-
+        public double optFlowMovement;
+        public Vector3d optFlowAngle;
+        public double[] maskOpticalFlowMovement = new double[5];
+        public Vector3d[] maskOpticalFlowVector = new Vector3d[5];
     }
 
     public class MediaWindow
@@ -41,19 +44,20 @@ namespace testmediasmall
         public double MouseX = 0.0; //location of the mouse along X
         public double MouseY = 0.0; //location of the mouse along Y
 
-        //double alpha = 0.0;
         EyeHelper EyeTracker = new EyeHelperTOBII();/////////////////////////////////////////////////////////EYE TRACKER
 
-        public static List<VFrame> Vframe_repository = new List<VFrame>();
-        public static List<Screen> Screens = new List<Screen>();
-
+        public static List<VFrame> Vframe_repository = new List<VFrame>(); 
+        public static List<Screen> Screens = new List<Screen>(); 
+ 
         ColorAnalysis RGBColor = new ColorAnalysis();
         public int frameNumber;
 
         // An image object to hold the latest camera frame
-        VBitmap Videoimage;// = new VBitmap(120, 120);
+        VBitmap Videoimage;// = new VBitmap(120, 120); 
+        VBitmap vbit_calib;
         //this object represents a single video input device [camera or video file]
-        public static VideoIN Video = new VideoIN();
+        public static VideoIN Video = new VideoIN(); 
+        VideoIN CalibrationVideo = new VideoIN(); 
 
         StreamWriter sw;
         //C_View is a class defined in the C_geometry.cs file and is just a helper object for managing viewpoint / tragetpoint camera mechanics
@@ -75,19 +79,25 @@ namespace testmediasmall
             ///////////////////////////////////////////////////////////////////////////////////END OF EYE TRACKER INIT
             //intialize Video capturing from primary camera [0] at a low resolution
             VideoIN.EnumCaptureDevices();
-            //test
+
             //...using webcam inputs
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
             //...use video
-
+            //CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
+            CalibrationVideo.StartVideoFile(@"C:\quantitative_aesthetics\countdown.avi"); 
+            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\birdman3_converted.avi");
             //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
             //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\quantitative_aesthetics\video_basics_5_12_2015\_testVideo2.avi");
+
             Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
-            System.Threading.Thread.Sleep(500);
+
+            System.Threading.Thread.Sleep(2000);
             Video.SetResolution(360, 240);
+            CalibrationVideo.SetResolution(360, 240); 
 
             sw = new StreamWriter(@"frame_111.csv");
         }
+ 
         public void Close()
         {
             sw.Close();
@@ -95,27 +105,37 @@ namespace testmediasmall
         }
 
         //window property
-        public static int rx = 0;
+		public static int rx = 0;
         public static int ry = 0;
 
-        //gaze property
-        int lr = -1; //focusing on left or right image
-        byte[] gazeColor = new byte[3];
-        public static Vector3d dpointNorm = new Vector3d();
+        public int rx_calib = 0;
+        public int ry_calib = 0;
+ 
+        double slowPlaybackRate = 0.3;  //slow down playback; global variable for all playback 
 
-        //global control
+        //gaze property
+        //byte[] gazeColor = new byte[3];
+		public static Vector3d dpointNorm = new Vector3d();
+        static byte[] gazeColor = new byte[3];
+        static Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
+
+        //turn zoomMode false for testing blackout
+        //bool motionPicture = false;///////////////////////////////////////////////////VISUALIZE FLOW OF MOTION WITH TRANSPARENCY 
+
+		//global control
+        bool checkVideo = false;
         static bool playbackmode = false;
         static int maxframes = 180;
         static int skippedFrameRange = 10;
         static bool blackout = true;
         static int screenCount = 3;
-        
+
         public static int other(int n)
         {
             //if (_lr == 0) { return 1; }
             //else if (_lr == 1) { return 0; }
             //else { return -1; }
-            if (n < Screens.Count -1) { return n + 1; }
+            if (n < Screens.Count - 1) { return n + 1; }
             else { return 0; }
         }
 
@@ -166,10 +186,11 @@ namespace testmediasmall
             return nf;
         }
 
-        public static int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB)
+        public static int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB, bool complementary)
         {
             int nf = 0;
             float minColorQuality = 255;
+            float maxColorQuality = 0;
 
             byte colorQuality = gazeRGB.Max();
             int colorQualityIndex = gazeRGB.ToList().IndexOf(colorQuality); //pick between redness, greenness, blueness for the gaze
@@ -180,7 +201,17 @@ namespace testmediasmall
                 {
                     float frameColorQuality = Vframe_repository[i].maskAvgRGBColor[gazeMaskNum][colorQualityIndex];   //get colorQuality (red, blue, greenness) value in mask number matching the gaze
                     float colorQualityDiff = Math.Abs(colorQuality - frameColorQuality);
-                    if (colorQualityDiff < minColorQuality)
+
+                    if (complementary) //pick the frame with the least of the qualifier (redness, greenness, blueness)
+                    {
+                        if (colorQualityDiff > maxColorQuality)
+                        {
+                            maxColorQuality = colorQualityDiff;
+                            nf = i;
+                            //Console.WriteLine("nf: " + nf);
+                        }
+                    }
+                    else if (colorQualityDiff < minColorQuality)
                     {
                         minColorQuality = colorQualityDiff;
                         nf = i;
@@ -190,12 +221,112 @@ namespace testmediasmall
             return nf;
         }
 
+        public static int maskOpticalFlowTransition(int analyzedFrame, int gazeMaskNum, double gazeOptFlowMovement, Vector3d gazeOptFlowVector, bool complementary)
+        {
+            int nf = 0;
+            double minTotalMovement = 100000;
+            double maxTotalMovement = 0;
+            double optFlowAngleDiff = 0.0;
+            double totalMovementDiff = 0.0;
+
+            for (int i = 0; i < Vframe_repository.Count; i++)
+            {
+                if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
+                {
+                    Vector3d gazeAngle = gazeOptFlowVector.Normalized();
+                    Vector3d newFrameAngleVector = Vframe_repository[i].maskOpticalFlowVector[gazeMaskNum].Normalized();
+
+                    totalMovementDiff = Math.Abs(gazeOptFlowMovement - Vframe_repository[i].maskOpticalFlowMovement[gazeMaskNum]);
+                    optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, newFrameAngleVector);    //1 if parallel
+
+                    if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be ~ +/- 30 degree
+                    {
+                        if (complementary) //show still image if lots of movement, etc 
+                        {
+                            if (totalMovementDiff > maxTotalMovement)
+                            {
+                                maxTotalMovement = totalMovementDiff;
+                                nf = i;
+                                //Console.WriteLine("nf: " + nf);
+                            }
+                        }
+                        else if (totalMovementDiff < minTotalMovement)
+                        {
+                            minTotalMovement = totalMovementDiff;
+                            nf = i;
+                            //Console.WriteLine("nf: " + nf);
+                        }
+                    }
+                    else if (Math.Abs(optFlowAngleDiff) > 0.5) //angle difference should be ~ +/- 30 degree
+                    {
+                        if (complementary) //show still image if lots of movement, etc 
+                        {
+                            if (totalMovementDiff > maxTotalMovement)
+                            {
+                                maxTotalMovement = totalMovementDiff;
+                                nf = i;
+                                //Console.WriteLine("nf: " + nf);
+                            }
+                        }
+                        else if (totalMovementDiff < minTotalMovement)
+                        {
+                            minTotalMovement = totalMovementDiff;
+                            nf = i;
+                            //Console.WriteLine("nf: " + nf);
+                        }
+                    }
+                    else nf = analyzedFrame; // no other frame matches then don't switch scenes
+                }
+            }
+            return nf;
+        }
+
+        public static int motionPictureWithGaze(int analyzedFrame)
+        {
+            int nf = 0;
+            double minTotalMovement = 100000;
+            double optFlowAngleDiff = 0.0;
+            double totalMovementDiff = 0.0;
+
+            for (int i = 0; i < Vframe_repository.Count; i++)
+            {
+                if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
+                {
+                    optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, Vframe_repository[i].optFlowAngle);    //1 if parallel
+                    totalMovementDiff = Math.Abs(Vframe_repository[analyzedFrame].totalMovement - Vframe_repository[i].totalMovement);
+
+                    if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be within +/- 30 degree
+                    {
+                        if (totalMovementDiff < minTotalMovement)
+                        {
+                            minTotalMovement = totalMovementDiff;
+                            nf = i;
+                            //Console.WriteLine("nf: " + nf);
+                        }
+                    }
+                }
+            }
+            return nf;
+        }
+
+        int maskN(int _i, int _j)
+        {
+            int n = 0;
+            if (_j > 0.75) { n = 4; }
+            else if (_j < 0.25) { n = 3; }
+            else if (_i < 0.25) { n = 1; }
+            else if (_i > 0.75) { n = 2; }
+            else { n = 0; }
+            return n;
+        }
+
         //animation function. This contains code executed 20 times per second.
         public void OnFrameUpdate()
         {
             if (Vframe_repository.Count >= maxframes && !playbackmode)
             {
-                playbackmode = true;
+                CalibrationVideo.Stop();
+				playbackmode = true;
                 if (Video.IsVideoCapturing && Screens.Count == 0)
                 {
                     for (int i = 0; i < screenCount; i++)
@@ -205,15 +336,13 @@ namespace testmediasmall
                         double w = (double)rx / (double)screenCount;
                         double h = (double)ry / (double)screenCount;
                         Screens.Add(new Screen(i, l, b, w, h));
-
                     }
                 }
                 Screens[0].ison = true;
             }
-            if (playbackmode)
-            {
+            if (playbackmode) //play our new gaze-composed movie
+			{
                 /////////////////////////////////////////////////////////////////////////////////////////////gaze calculation
-                
                 Vector3d lnorm = new Vector3d(EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.X,
                                               EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.Y, 0.0);
                 Vector3d rnorm = new Vector3d(EyeTracker.EyeRightSmooth.GazePositionScreenNorm.X,
@@ -222,14 +351,14 @@ namespace testmediasmall
                 dpointNorm.Y = (1.0 - dpointNorm.Y) * ry;
                 dpointNorm.X = (1.0 - dpointNorm.X) * rx;
 
-                dpointNorm = new Vector3d(MouseX / (double)Width * (double)rx, MouseY / (double)Height*(double)ry, 0.0);////////CHANGE IT!!
+                dpointNorm = new Vector3d(MouseX / (double)Width * (double)rx, MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
 
-                GL.ClearColor(0.0f, 0.6f, 0.6f, 1.0f);
+				GL.ClearColor(0.0f, 0.6f, 0.6f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                 GL.MatrixMode(MatrixMode.Projection);
                 GL.LoadIdentity();
                 GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
-
+	
                 for (int i = 0; i < Screens.Count; i++)
                 {
                     Screens[i].OnTimeLapse(dpointNorm);
@@ -257,12 +386,6 @@ namespace testmediasmall
                         }
                     }
                 }
-                GL.PointSize(30.0f);///////////////////////////////////////////////////////////////////////////////////////////VISUALIZE GAZE
-                GL.Color4(gazeColor[0] / 255.0, gazeColor[1] / 255.0, gazeColor[2] / 255.0, 1.0);
-                GL.Begin(PrimitiveType.Points);
-                //GL.Vertex2(focus[0], focus[1] );
-                GL.Vertex2(dpointNorm.X * rx, dpointNorm.Y * ry);
-                GL.End();
 
                 if (blackout)
                 {
@@ -273,26 +396,32 @@ namespace testmediasmall
                     int sampleRadius = 50;
                     Vector3d blockPoint = new Vector3d(rnd.Next(0, sampleRadius), rnd.Next(0, sampleRadius), 0.0);
 
+                	GL.PointSize(30.0f);///////////////////////////////////////////////////////////////////////////////////////////VISUALIZE GAZE
+                	GL.Color4(gazeColor[0] / 255.0, gazeColor[1] / 255.0, gazeColor[2] / 255.0, 1.0);
+                	GL.Begin(PrimitiveType.Points);
+                	//GL.Vertex2(focus[0], focus[1] );
+                	GL.Vertex2(dpointNorm.X * rx, dpointNorm.Y * ry);
+                	GL.End();
                 }
                 ///////////////////////////////////////////////////////////////////////////////////////////////////end of interaction
-
-                //////////////////////////////////////////////////////////////////////////////////////////////////////.//////draw black cover
+				//////////////////////////////////////////////////////////////////////////////////////////////////////.//////draw black cover
                 GL.Color4(0.0, 0.0, 0.0, 1.0);
                 GL.Begin(PrimitiveType.Quads);
                 GL.Vertex2(0, 0);
                 GL.Vertex2(rx, 0);
-                GL.Vertex2(rx, ry/4);
-                GL.Vertex2(0, ry/4);
+                GL.Vertex2(rx, ry / 4);
+                GL.Vertex2(0, ry / 4);
 
-                GL.Vertex2(0, 3*ry/4);
+                GL.Vertex2(0, 3 * ry / 4);
                 GL.Vertex2(rx, 3 * ry / 4);
                 GL.Vertex2(rx, ry);
                 GL.Vertex2(0, ry);
                 GL.End();
-            }
+            }//end of playback mode
 
-            else
+            else //analyzing phase - calculations and visualization
             {
+                //show the video 
                 if (!Video.IsVideoCapturing) return; //make sure that there is a camera connected and running
                 //recalculate the video frame if the camera got a new one
                 if (Video.NeedUpdate) Video.UpdateFrame(true);
@@ -300,65 +429,50 @@ namespace testmediasmall
                 VideoPixel[,] px = Video.Pixels;
                 rx = Video.ResX;
                 ry = Video.ResY;
-                Videoimage = new VBitmap(rx, ry);
+				Videoimage = new VBitmap(rx, ry);
                 Videoimage.FromVideo(Video);
+
+                //calbration Video 
+                if (!CalibrationVideo.IsVideoCapturing) return;
+                if (CalibrationVideo.NeedUpdate) CalibrationVideo.UpdateFrame(true);
 
                 GL.ClearColor(0.6f, 0.6f, 0.6f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                 GL.MatrixMode(MatrixMode.Projection);
-                //GL.RasterPos2()
-                //GL.PixelZoom()
                 GL.LoadIdentity();
                 GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
-                //initialization to create histogram from bins (alternative to openCV)
-                /*List<int> RGB_bin = new List<int>();
-                for (int i = 0; i < 10; i++)
+                if (checkVideo)
                 {
-                    RGB_bin.Add(0);
+                    Videoimage.FromVideo(Video);    //visualize the video for analysis
+                    Videoimage.Draw(0.0, 0.0, rx, ry, 1.0); //draw original image 
                 }
-                */
-
-                Videoimage.Draw(0.0, 0.0, rx, ry, 1.0);
-                double totalMovement = 0.0;
-
-                for (int j = 0; j < ry; ++j)
+                else
                 {
-                    for (int i = 0; i < rx; ++i)
-                    {
-                        //draw screen
-                        //GL.PointSize((float)(1.0 + Video.Pixels[j, i].V * 20.0));
-                        GL.PointSize((float)(rx));
-                        //draw pixels
-                        GL.Color4(px[j, i].R, px[j, i].G, px[j, i].B, 1.0);
-                        GL.Begin(PrimitiveType.Points);
-                        GL.Vertex2(i, j);
-                        GL.End();
-                    }
+                    VideoPixel[,] px_calibration = CalibrationVideo.Pixels;
+                    rx_calib = CalibrationVideo.ResX;
+                    ry_calib = CalibrationVideo.ResY;
+                    vbit_calib = new VBitmap(120, 120); 
+                    vbit_calib.FromVideo(CalibrationVideo); //visualize the countdown video
+                    vbit_calib.Draw(0.0, 0.0, rx, ry, 1.0);
                 }
+
+                //visualize the gaze point
+                double alpha_gaze = 0.8;
+                double startFade_gaze = 20;
+                GL.PointSize((float)(rx / 15));
+                if (frameNumber > maxframes - startFade_gaze) { GL.Color4(255.0 / 255.0, 165.0 / 255.0, 0.0, alpha_gaze * Math.Cos((maxframes - frameNumber) / maxframes) * 60 * Math.PI); }
+                else { GL.Color4(255.0 / 255.0, 100.0 / 255.0, 0.0, alpha_gaze); }
+                GL.Begin(PrimitiveType.Points);
+                GL.Vertex2(dpointNorm.X * rx, dpointNorm.Y * ry);
+                GL.End();
+
+                double totalMovement = 0.0;//////////////////???????????????????????
                 sw.WriteLine();
                 frameNumber++;
 
-                RGBColor.FrameUpdate(px, rx, ry);
+                RGBColor.FrameUpdate(px, rx, ry);   //RGB histogram rendering in the ColorAnalysis file 
 
-                for (int j = 0; j < ry; ++j)
-                {
-                    for (int i = 0; i < rx; ++i)
-                    {
-                        //optical flow 
-                        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
-                        //angle 
-                        double optFlowAngle = Math.Atan2(px[j, i].mx, px[j, i].my);
-                        totalMovement += diff;
-
-                        //draw movement 
-                        //GL.PointSize((float)(diff * 10.0));
-                        //GL.Color4(1.0, 0.0, 0.0, 0.5);
-                        //GL.Begin(PrimitiveType.Points);
-                        //GL.Vertex2(i * Width/rx, j * Height/ry);
-                        //GL.End();
-                    }
-                }
                 VFrame vf = new VFrame();
                 //vf.frame_pix_data = (byte[, ,])RGBColor.imgdataBGR.Clone();
                 int j2;
@@ -374,6 +488,7 @@ namespace testmediasmall
                         }
                     }
                 }
+
                 vf.avgr = RGBColor.avgr;
                 vf.avgg = RGBColor.avgg;
                 vf.avgb = RGBColor.avgb;
@@ -381,7 +496,7 @@ namespace testmediasmall
                 vf.HistoR = RGBColor.HistoR;
                 vf.HistoG = RGBColor.HistoG;
                 vf.HistoB = RGBColor.HistoB;
-                vf.totalMovement = totalMovement;
+				vf.totalMovement = totalMovement;
 
                 double cBlue = CvInvoke.cvCompareHist(vf.HistoR.Histogram, vf.HistoB.Histogram, Emgu.CV.CvEnum.HISTOGRAM_COMP_METHOD.CV_COMP_CORREL);
                 //////////////////////////////////////////////////////////////////////////////color palette code
@@ -391,33 +506,47 @@ namespace testmediasmall
                 Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);   //sort intialCMap by hue
                 var a = ColorQuantizer.TranslateHSV(DiffColorMap[0]);
                 vf.domiHue = a[0];
-
                 ////////////////////////////////////////////////////////////////////////end of color palette cod
 
+                for (int j = 0; j < ry; ++j)
+                {
+                    for (int i = 0; i < rx; ++i)
+                    {
+                        //optical flow 
+                        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
+                        vf.totalMovement += diff;
 
-                ///////////////////////////////////////////////////////////////////optical flow
-                //double totalMovement = 0.0;
-                //for (int j = 0; j < ry; ++j)
-                //{
-                //    for (int i = 0; i < rx; ++i)
-                //    {
-                //        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
-                //        GL.PointSize((float)(diff * 50.0));
-                //        GL.Color4(1.0, 0.0, 0.0, 0.5);
-                //        GL.Begin(PrimitiveType.Points);
-                //        GL.Vertex2(i , j );
-                //        GL.End();
+                        //average optical flow angle 
+                        Vector3d angle = new Vector3d(px[j, i].mx, px[j, i].my, 0);
+                        vf.optFlowAngle += angle;
+                        vf.optFlowMovement /= (rx * ry);
 
-                //        //angle 
-                //        double optFlowAngle = Math.Atan2(px[j, i].mx, px[j, i].my);
-                //        // optFlowAngle +=  
+                        //draw movement 
+                        //GL.PointSize((float)(diff * 10));
+                        //GL.Color4(1.0, 0.0, 0.0, 0.5);
+                        //GL.Begin(PrimitiveType.Points);
+                        //GL.Vertex2(i, j);
+                        //GL.End();
+                    }
+                }
 
-                //        totalMovement += diff;
-                //    }
-                //}
-                //vf.totalMovement = totalMovement;
-                /////////////////////////////////////////////////////////////end of optical flow
-
+                //optical flow for each mask 
+                int[] maskPixCount = new int[5];
+                for (int j = 0; j < ry; ++j)
+                {
+                    for (int i = 0; i < rx; ++i)
+                    {
+                        double diff = Math.Abs(px[j, i].V - px[j, i].V0);
+                        Vector3d angle = new Vector3d(px[j, i].mx, px[j, i].my, 0);
+                        maskPixCount[maskN(i, j)]++;
+                        vf.maskOpticalFlowMovement[maskN(i, j)] += diff;
+                        vf.maskOpticalFlowVector[maskN(i, j)] += angle;
+                    }
+                }
+                for (int i = 0; i < 5; i++)
+                {
+                    vf.maskOpticalFlowMovement[i] = vf.maskOpticalFlowMovement[i] / (double)maskPixCount[i];
+                }
                 Vframe_repository.Add(vf);
             }
         }

@@ -297,8 +297,9 @@ namespace testmediasmall
                     );
                 }
             }
-            //Console.WriteLine(avgb_index);
-            //histo_writer.Write(avgb_index);
+
+
+
             histo_writer.WriteLine(); //move to next line for each frame update  
 
             /*
@@ -317,7 +318,57 @@ namespace testmediasmall
             }
             */
         }
+
+        private MotionHistory _motionHistory;
+
+        private void ProcessMotion()
+        {
+            using (MemStorage storage = new MemStorage()) //create storage for motion components
+            {
+                //update the motion history
+                _motionHistory.Update(gray);
+
+                //#region get a copy of the motion mask and enhance its color
+                //double[] minValues, maxValues;
+                //Point[] minLoc, maxLoc;
+                //_motionHistory.Mask.MinMax(out minValues, out maxValues, out minLoc, out maxLoc);
+                //Image<Gray, Byte> motionMask = _motionHistory.Mask.Mul(255.0 / maxValues[0]);
+                //#endregion
+
+                //create the motion image 
+                //display the motion pixels in blue (first channel)
+
+                //Threshold to define a motion area, reduce the value to detect smaller motion
+                double minArea = 100;
+
+                storage.Clear(); //clear the storage
+                Seq<MCvConnectedComp> motionComponents = _motionHistory.GetMotionComponents(storage);
+
+                //iterate through each of the motion component
+                foreach (MCvConnectedComp comp in motionComponents)
+                {
+                    //reject the components that have small area;
+                    if (comp.area < minArea) continue;
+
+                    // find the angle and motion pixel count of the specific area
+                    double angle, motionPixelCount;
+                    _motionHistory.MotionInfo(comp.rect, out angle, out motionPixelCount);//////////////////////////
+
+                    //reject the area that contains too few motion
+                    if (motionPixelCount < comp.area * 0.05) continue;
+                }
+
+                // find and draw the overall motion angle
+                double overallAngle, overallMotionPixelCount;
+                _motionHistory.MotionInfo(gray.ROI, out overallAngle, out overallMotionPixelCount);
+
+                //Display the amount of motions found on the current image
+                //UpdateText(String.Format("Total Motions found: {0}; Motion Pixel count: {1}", motionComponents.Total, overallMotionPixelCount));
+            }
+        }
     }
+
+
 
     public class RGBHisto
     {

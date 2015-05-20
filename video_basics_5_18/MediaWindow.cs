@@ -550,6 +550,7 @@ namespace testmediasmall
                 for (int i = 0; i < 5; i++)
                 {
                     vf.maskOpticalFlowMovement[i] = vf.maskOpticalFlowMovement[i] / (double)maskPixCount[i];
+                    vf.maskOpticalFlowVector[i].Normalize();
                 }
                 Vframe_repository.Add(vf);
             }

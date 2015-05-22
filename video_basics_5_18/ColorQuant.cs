@@ -76,9 +76,9 @@ namespace testmediasmall
             {
                 for (int i = 0; i < w; ++i)
                 {
-                    uint R = Convert.ToUInt32(bmp.frame_pix_data[j, i, 2]);////////
-                    uint G = Convert.ToUInt32(bmp.frame_pix_data[j, i, 1]);////////
-                    uint B = Convert.ToUInt32(bmp.frame_pix_data[j, i, 0]);////////
+                    uint R = Convert.ToUInt32(bmp.pix_data[j, i, 2]);////////
+                    uint G = Convert.ToUInt32(bmp.pix_data[j, i, 1]);////////
+                    uint B = Convert.ToUInt32(bmp.pix_data[j, i, 0]);////////
                     data[k++] = (R << 24) | (G << 16) | (B << 8);/////////
                 }
             }

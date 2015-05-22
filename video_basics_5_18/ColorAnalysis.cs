@@ -58,15 +58,6 @@ namespace testmediasmall
         public float avgb_index = 0;
         public List<float[]> maskAvgRGBColor = new List<float[]>();  //store rgb average for each mask
 
-        //public byte[] HistoRA_byte;
-        //public byte[] HistoGA_byte;
-        //public byte[] HistoBA_byte;
-
-        // byte[, ,] mask1data;
-        // byte[, ,] mask2data;
-        // Image<Gray, byte> mask1;
-        // Image<Gray, byte> mask2;
-
         //mask
         List<byte[, ,]> maskData = new List<byte[, ,]>();
         List<Image<Gray, byte>> masks = new List<Image<Gray, byte>>();
@@ -137,7 +128,6 @@ namespace testmediasmall
                     masks.Add(new Image<Gray, byte>(maskData[k]));
                 }
             }
-
             
             //scan each pixel for rgb
             for (int j = 0; j < ry; ++j)
@@ -178,10 +168,6 @@ namespace testmediasmall
                 imgR_withMask = new Image<Gray, byte>(imgdataR).Copy();
                 imgG_withMask = new Image<Gray, byte>(imgdataG).Copy();
                 imgB_withMask = new Image<Gray, byte>(imgdataB).Copy();
-
-                //imgR_masks = new List<Image<Gray, byte>>();
-                //imgG_masks = new List<Image<Gray, byte>>();
-                //imgB_masks = new List<Image<Gray, byte>>();
             }
             else
             {
@@ -192,15 +178,11 @@ namespace testmediasmall
                 imgR.Data = imgdataR;
                 imgG.Data = imgdataG;
                 imgB.Data = imgdataB;
-                ///////////////////////////////////////////////////////////////////////////////////////////////////
+                
                 for(int i = 0; i < masks.Count; i++){
                     imgR_withMask = imgR.Copy(masks[i]);
                     imgG_withMask = imgG.Copy(masks[i]);
                     imgB_withMask= imgB.Copy(masks[i]);
-
-                    //imgR_masks.Add(imgR_withMask);
-                    //imgG_masks.Add(imgR_withMask);
-                    //imgB_masks.Add(imgR_withMask);
                 }
             }
 
@@ -249,6 +231,7 @@ namespace testmediasmall
                 maskAvgRGBColor.Add(eachMaskRGBColor);
                 //float[] HistSA = HistoH.CalculateRGBHistogram(imgHue, masks[m]);
 
+                /*
                 //render histogram on screen
                 GL.MatrixMode(MatrixMode.Projection);
                 GL.LoadIdentity();
@@ -285,9 +268,8 @@ namespace testmediasmall
                 {
                     GL.Vertex2(i, 10.0 + HistSA[i] + rx * rx / (masks.Count) * m);
                 }
-                 */
                 GL.End();
-
+                */
                 for (int k = 0; k < HistoR.binNum; k++)
                 {
                     histo_writer.Write(

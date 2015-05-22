@@ -19,16 +19,42 @@ namespace testmediasmall
     {
         public MainWindowForm()
         {
+            
+            InitializeComponent();
+
+            GLviewport = new GLControl(new GraphicsMode(
+                new ColorFormat(8,8,8,8),
+                16,
+                0,
+                0,
+                new ColorFormat(0),
+                2
+                ), 2, 0, GraphicsContextFlags.Default);
+
+            GLviewport.Load += GLviewport_Load;
+            GLviewport.Paint+= GLviewport_Paint;
+            GLviewport.Resize += GLviewport_Resize;
+            GLviewport.MouseMove+=GLviewport_MouseMove;
+
+            GLviewport.Parent = this;
+
+
+
             Resize += new EventHandler(MainWindowForm_Resize);
-            InitializeComponent();            
         }
 
+        public GLControl GLviewport;
         MediaWindow mediawin = new MediaWindow();
         bool loaded = false;
         Timer timer = new Timer();
 
         void MainWindowForm_Resize(object sender, EventArgs e)
-        {            
+        {
+            if (GLviewport == null) return;
+            GLviewport.Location = new Point(0, 0);
+            GLviewport.Size = new System.Drawing.Size(ClientSize.Width, ClientSize.Height);
+
+           // mediawin.Viewer.SetViewportSize(GLviewport.Width, GLviewport.Height);
           /*  int flayoutsize=150;
             flowLayoutPanel1.Location = new Point(ClientSize.Width - flayoutsize, 0);
             flowLayoutPanel1.Size = new System.Drawing.Size(flayoutsize, ClientSize.Height);
@@ -37,12 +63,21 @@ namespace testmediasmall
             GLviewport.Size = new System.Drawing.Size(ClientSize.Width-flayoutsize, ClientSize.Height);*/
         }
 
+        //int buffers = 1;
+
         void UpdateFrame()
         {
             if (!loaded) return;
+
+            //enable rendering to FBO
+
             mediawin.OnFrameUpdate();
 
-            GLviewport.SwapBuffers();
+
+            //bind fbo as texture
+            //render a full screen quad with this texture
+
+             GLviewport.SwapBuffers();
         }
 
         private void GLviewport_Load(object sender, EventArgs e)
@@ -51,7 +86,7 @@ namespace testmediasmall
             mediawin.Initialize();
 
             loaded = true;
-            timer.Interval = 35;
+            timer.Interval = 70;
             timer.Enabled = true;
             timer.Start();
             timer.Tick += new EventHandler(timer_Tick);

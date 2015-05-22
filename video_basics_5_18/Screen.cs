@@ -15,8 +15,12 @@ namespace testmediasmall
     {
         //canvas property
         public int id;
-        public double left, bottom, w, h;
+        public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
+        public enum Mode { zoom, sequence, motion, pan}
+        public Mode mode = Mode.pan;
+        static double _rx = MediaWindow.rx;
+        static double _ry = MediaWindow.ry;
 
         //gaze property
         List<Vector3d> gazeL = new List<Vector3d>();
@@ -26,43 +30,37 @@ namespace testmediasmall
         public Vector3d projF = new Vector3d();//projected focus
         public byte[] gazeColor = new byte[3];
         Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
+        double gazeOptFlow = 0.0;
+        Vector3d gazeVector;
         int lastf_gazeMedium = 8;
         int lastf_motionPicture = 3;
         public int num;  //get mask number of the gaze
 
         //frame control
         int cframe = 0;    //current frame
-        double cframeSlowPlayback = 0.0;  //reduce the frame rate for playback
         int pframe = 0;  //frame number of previous clip during transition
-        double pframeSlowPlayback = 0.0;
         int newFrame = 0;
 
-        public double tx0, ty0, tx1, ty1;
         //on/off control
-        public bool ison = true;
-        int oncount = 0; //loop count AFTER A ZOOM IS FINISHED!
-        int onduration = 50000;
+        public bool ison = false;
 
-
-        ///////////////////////////////////////////////////////////////Aiko
         int framecount = 0; //framecount before triggering zoom again
-        double frameCountForNoTransition = 0;
-        int numFramesInScene = 10;
-        double gazeOptFlow = 0.0;
-        Vector3d gazeVector = new Vector3d(0.0, 0.0, 0.0);
-        double slowPlaybackRate = 1.0;
+        int transitionInterval = 10;
+
+        //pan control
+        public bool ispanning = false;
+        int pancount = 0;
+        static int panduration = 60;
+        static double panrate = 0.01;
 
         //motion control
-        public bool motionMode = false;
         public bool ismotion = false;
         int motioncount = 0;
-        double motioncountSlow;
         static int motionduration = 20;
         static int motionStartF = 55;
         static int motionInterval = 6;
 
         //zoom control
-        public bool zoomMode = true;
         public bool iszooming = false;
         int zoomcount = 0;
         static int zoomduration = 60;
@@ -74,31 +72,26 @@ namespace testmediasmall
         static int fadeduration = 40;
 
         //sequence control
-        public bool sequenceMode = false;
         bool issequencing = false;
         int sequencecount = 0;
         static int sequenceduration = 60;
         static int sequenceStartF = 25;
         static int sequenceInterval = 3;
 
+        static int next(int n)
+        {
+            return (n + 1) % MediaWindow.screenCount;
+        }
+        static int prev(int n)
+        {
+            return (n + 4) % MediaWindow.screenCount;
+        }
         public Screen(int _id, double _left, double _bottom, double _w, double _h)
         {
             id = _id; left = _left; bottom = _bottom; w = _w; h = _h;
             if (vbit == null) { vbit = new VBitmap(MediaWindow.rx, MediaWindow.ry); }
         }
-
-        public void SetCframe(int _frame)
-        {
-            cframe = _frame;
-            cframeSlowPlayback = _frame;
-        }
-
-        public void SetPframe(int _frame)
-        {
-            pframe = _frame;
-            pframeSlowPlayback = _frame;
-        }
-
+        
         public bool IsLookedAt(Vector3d gazeInput) //gazeInout must bee un-unitized (x *=rx, y *= ry)
         {
             if (!ison) { return false; }
@@ -113,7 +106,6 @@ namespace testmediasmall
             }
             else { return false; }
         }
-
         public void OnEyeOut()///need modify
         {
             if (!ison) { return; }
@@ -123,17 +115,17 @@ namespace testmediasmall
                 gazeL.Clear();
                 deviation = 0.0;
                 gazeColor[0] = 255; gazeColor[1] = 255; gazeColor[2] = 255;
+                gazeVector = new Vector3d(0.0, 0.0, 0.0);
                 /////////////////////////////////////////////////////////////////reset gaze motion, gaze etc too
             }
         }
-
         private Vector3d ProjectedGaze(Vector3d gazeInput)
         {
             Vector3d pg = new Vector3d();
             //pg.X = Math.Min(Math.Max((gazeInput.X - left) * (double)MediaWindow.rx / w, 2.0), MediaWindow.rx - 3.0);
             //pg.Y = Math.Min(Math.Max((gazeInput.Y - bottom) * (double)MediaWindow.ry / h, 2.0), MediaWindow.ry - 3.0);
-            pg.X = (((gazeInput.X - left) / w) *(tx1 - tx0) + tx0) * MediaWindow.rx;
-            pg.Y = (((gazeInput.Y - bottom) / h) * (ty1 - ty0) + ty0) * MediaWindow.ry;
+            pg.X = (((gazeInput.X - left) / w) * (tx1 - tx0) + tx0) * _rx;
+            pg.Y = (((gazeInput.Y - bottom) / h) * (ty1 - ty0) + ty0) * _ry;
             pg.Z = 0.0;
             return pg;
         }
@@ -142,8 +134,8 @@ namespace testmediasmall
             Vector3d ag = new Vector3d();
             //ag.X = (projectedG.X * w / (double)MediaWindow.rx + left);
             //ag.Y = (projectedG.Y * h / (double)MediaWindow.ry + bottom);
-            ag.X = ((projectedG.X / MediaWindow.rx) - tx0) * w / (tx1 - tx0) + left;
-            ag.Y = ((projectedG.Y / MediaWindow.ry) - ty0) * h / (ty1 - ty0) + bottom;
+            ag.X = ((projectedG.X / _rx) - tx0) * w / (tx1 - tx0) + left;
+            ag.Y = ((projectedG.Y / _ry) - ty0) * h / (ty1 - ty0) + bottom;
             ag.Z = 0.0;
             return ag;
         }
@@ -154,7 +146,7 @@ namespace testmediasmall
             projG = ProjectedGaze(gazeInput);
 
             gazeL.Add(projG);
-            if (gazeL.Count > 150) { gazeL.RemoveAt(0); }
+            if (gazeL.Count > 20) { gazeL.RemoveAt(0); }
 
             //mask num
             /* mask
@@ -179,6 +171,10 @@ namespace testmediasmall
                 deviation = Math.Sqrt(deviation);
             }
 
+            if (gazeL.Count >1)
+                gazeVector = gazeL[gazeL.Count - 1] - gazeL[gazeL.Count - 2];
+            else
+                gazeVector = new Vector3d(0.0,0.0,0.0) ;
             //gaze color/////////////////////////////////NEED TO CONFIRM VBIT HAS CORRECT CONTENT!!
             gazeColor[0] = (byte)(vbit.Pixels[(int)projG.Y, (int)projG.X].R * 255.0);
             gazeColor[1] = (byte)(vbit.Pixels[(int)projG.Y, (int)projG.X].G * 255.0);
@@ -199,9 +195,8 @@ namespace testmediasmall
             gazeOptFlowVector = MediaWindow.Vframe_repository[cframe].maskOpticalFlowVector[num];
         }
 
-        private void TryZoom()
+        private void DoZoom()
         {
-            if (gazeL.Count < lastf_gazeMedium || !zoomMode) { return; }
             if (iszooming)
             {
                 if (zoomcount >= zoomduration)
@@ -209,34 +204,40 @@ namespace testmediasmall
                     //here write the code that is executed during the transition period [zoom, cut etc....]
                     iszooming = false;
                     zoomcount = 0;
-                    isfading = false;
                     framecount = 0;
-                    frameCountForNoTransition = 0;
+                    isfading = false;
+
+                    Console.WriteLine(id + " stops zooming, cf = " + cframe);
                     return;
                 }
                 if ((zoomcount >= zoomduration - fadeduration) && !isfading)
                 {
                     isfading = true;
-                    MediaWindow.Screens[MediaWindow.other(id)].ison = true;
-                    SetCframe(newFrame);
+                    MediaWindow.Screens[next(id)].ison = true;
+                    //pframe = cframe;
+                    cframe = newFrame;
+                    Console.WriteLine(id + " is fading, pf = " + pframe +", cf = " + cframe);
+
                     fadecount = 0;
                 }
                 zoomcount++;
                 if (isfading) { fadecount++; }
             }
-            else if (framecount > numFramesInScene && deviation < 20 && deviation > 0.00000000001) //avoid zooming when there's no gaze data (dev = 0)
+            else if (deviation < 20 && deviation > 0.00000000001 && framecount > transitionInterval ) //avoid zooming when there's no gaze data (dev = 0)
             {
                 projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
 
-                MediaWindow.Screens[MediaWindow.other(id)].ison = true;
-                MediaWindow.Screens[MediaWindow.other(id)].iszooming = true;
-                MediaWindow.Screens[MediaWindow.other(id)].zoomcount = 0;
-                MediaWindow.Screens[MediaWindow.other(id)].SetPframe(cframe); ///Frame reassignments
+                MediaWindow.Screens[next(id)].ison = true;
+                iszooming = true;
+                zoomcount = 0;
+                pframe = cframe; ///Frame reassignments
+
+                Console.WriteLine(id + " is zooming, cf = "+cframe);
 
                 //choose which scene to show (just remember it for now, show it later)
                 //newFrame[other(sn)] = maskAvgRGBTransition(cframe[sn], num, gazeColor);
-                MediaWindow.Screens[MediaWindow.other(id)].newFrame = MediaWindow.domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue  
-                MediaWindow.Screens[MediaWindow.other(id)].newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, true);// CHOOSE BETWEEN!!!!!!!!!!!!!!!!!!!!!!!!!!!/////////////////////////////Aiko
+                newFrame = MediaWindow.domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue  
+                //MediaWindow.Screens[MediaWindow.other(id)].newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, true);// CHOOSE BETWEEN!!!!!!!!!!!!!!!!!!!!!!!!!!!/////////////////////////////Aiko
                 //MediaWindow.Screens[MediaWindow.other(id)].newFrame = maskOpticalFlowTransition(cframe, num, gazeOptFlow, gazeOptFlowVector, true);//add px optical flow later!!//////////////////////////
             }
             else////////////////////////////////////////////////////////////////Aiko
@@ -245,11 +246,38 @@ namespace testmediasmall
                 //framecount = (int)Math.Floor(frameCountForNoTransition);
             }
         }
-
-        /////////////////////////////////////////////////////////////////////////////Aiko
-        private void TryMotion()
+        void DoPan()
         {
-            if (gazeL.Count < lastf_motionPicture || !motionMode) { return; }
+            double dir = Vector3d.Dot(new Vector3d(-1.0, 0.0, 0.0), gazeVector);
+            if (ispanning) //post fixation period lasts for zoomduration frames
+            {
+                if (pancount > panduration)
+                {
+                    ispanning = false;
+                    Console.WriteLine(id + " stops panning");
+                    return;
+                }
+                pancount++;
+                Console.WriteLine(id + " pancount = " + pancount);
+            }
+            if (dir > 0.0) //any condition that triggers motion mode, maybe gaze optical flow....
+            {
+
+                if ( !MediaWindow.Screens[prev(id)].ispanning)
+                {
+                    MediaWindow.Screens[prev(id)].ison = true;
+                    MediaWindow.Screens[prev(id)].ispanning = true;
+                    MediaWindow.Screens[prev(id)].pancount = 0;
+                    MediaWindow.Screens[prev(id)].cframe = cframe;
+                    Console.WriteLine(prev(id) + " is panning, cframe = " + cframe);
+                }
+            }
+            else
+            {
+            }
+        }
+        private void DoMotion()
+        {
             if (ismotion) //post fixation period lasts for zoomduration frames
             {
                 if (motioncount >= motionduration)
@@ -257,27 +285,23 @@ namespace testmediasmall
                     ismotion = false;
                     return;
                 }
-                motioncountSlow += slowPlaybackRate;  //independent counter from the beginning of film
-                motioncount = (int)Math.Floor(motioncountSlow);
+                motioncount++;
             }
             else if (cframe > motionStartF) //any condition that triggers motion mode, maybe gaze optical flow....
             {
                 //projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
 
                 //MediaWindow.Screens[MediaWindow.other(id)].ison = true;
-                ismotion = true;//when one screen itself is in motion mode, it can't trigger other screen's motion mode
+                ismotion = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
                 motioncount = 0;
-                motioncountSlow = 0;
                 //MediaWindow.Screens[MediaWindow.other(id)].SetPframe(cframe); ///Frame reassignments
             }
             else
             {
             }
         }
-
-        private void TrySequence()
+        void DoSequence()
         {
-            if (gazeL.Count < lastf_motionPicture || !sequenceMode) { return; }
             if (issequencing) //post fixation period lasts for zoomduration frames
             {
                 if (sequencecount > sequenceduration)
@@ -295,11 +319,11 @@ namespace testmediasmall
                 //MediaWindow.Screens[MediaWindow.other(id)].ison = true;
                 issequencing = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
                 sequencecount = 0;
-                MediaWindow.Screens[MediaWindow.other(id)].ison = true;
-                MediaWindow.Screens[MediaWindow.other(id)].issequencing = true;
-                MediaWindow.Screens[MediaWindow.other(id)].sequencecount = 0;
-                MediaWindow.Screens[MediaWindow.other(id)].SetCframe(cframe - sequenceInterval);
-                Console.WriteLine(id + " is sequencing, cframe = " + cframe + ", " + MediaWindow.other(id) + " cframe = " + (cframe - sequenceInterval));
+                MediaWindow.Screens[next(id)].ison = true;
+                MediaWindow.Screens[next(id)].issequencing = true;
+                MediaWindow.Screens[next(id)].sequencecount = 0;
+                MediaWindow.Screens[next(id)].cframe = cframe - sequenceInterval;
+                Console.WriteLine(id + " is sequencing, cframe = " + cframe + ", " + next(id) + " cframe = " + (cframe - sequenceInterval));
             }
             else
             {
@@ -308,23 +332,22 @@ namespace testmediasmall
 
         private void FrameUpdate()
         {
-            oncount++;
-            cframeSlowPlayback += 0.2;
-            cframe = (int)Math.Floor(cframeSlowPlayback);
-            if (isfading)
+            framecount++;
+            cframe++;
+            if (iszooming)
             {
-                pframeSlowPlayback += 0.2;
-                pframe = (int)Math.Floor(pframeSlowPlayback);
+                pframe++;
             }
             if (cframe >= MediaWindow.Vframe_repository.Count)
             {
-                SetCframe(0);
-                oncount = 0;
+                cframe = 0;
             }
             if (pframe >= MediaWindow.Vframe_repository.Count)
             {
-                SetPframe(0);
+                pframe = 0;
             }
+
+            //Console.WriteLine(id + " cf = " + cframe);
         }
 
         public void OnTimeLapse(Vector3d gazeInput)
@@ -338,119 +361,109 @@ namespace testmediasmall
             {
                 CalculateGazeProperty(gazeInput);
             }
-            TryZoom();
-            TryMotion();
-            TrySequence();
+            if (mode == Mode.zoom) DoZoom();
+            if (mode == Mode.motion) DoMotion();
+            if (mode == Mode.sequence) DoSequence();
+            if (mode == Mode.pan) DoPan();
             //////////////////////////////////////////////////////////////////////////////////try other things too
         }
 
         public void DrawVbit()
         {
             // if (!ison) { return; }
-            double x0, y0, wd, ht, a;
+            double _tx0, _tx1, _ty0, _ty1, a;
 
             if (ismotion)
             {
-                x0 = left;
-                y0 = bottom;
-                wd = w;
-                ht = h;
                 a = 0.3;
                 ///if (motioncount % motionInterval == 0)
                 //{
                 for (int i = motioncount; i < 1; i += motionInterval)
                 {
                     vbit.FromFrame(MediaWindow.Vframe_repository[cframe - i].pix_data);
-                    vbit.Draw(x0, y0, wd, ht, a);
+                    vbit.Draw(left, bottom, w, h, a);
                 }
-
             }
 
             else if (!iszooming || (iszooming && isfading))
             {
-                x0 = left;
-                y0 = bottom;
-                wd = w;
-                ht = h;
                 byte[, ,] px = MediaWindow.Vframe_repository[cframe].pix_data;
                 vbit.FromFrame(px);
                 vbit.Update();
                 //vbit.Draw(x0, y0, wd, ht, 1.0);
 
                 GL.Enable(EnableCap.Texture2D);
-
-
                 GL.BindTexture(TextureTarget.Texture2D, vbit.texid);
                 GL.Color4(1.0, 1.0, 1.0, 1.0);
-
-                //GL.Begin(PrimitiveType.Quads);
-                //GL.TexCoord2(tx0, ty0);
-                //GL.Vertex2(x0, y0);
-
-                //GL.TexCoord2(tx1, ty0);
-                //GL.Vertex2(x0 + w, y0);
-
-                //GL.TexCoord2(tx1, ty1);
-                //GL.Vertex2(x0 + w, y0 + h);
-
-                //GL.TexCoord2(tx0, ty1);
-                //GL.Vertex2(x0, y0 + h);
-
                 GL.Begin(PrimitiveType.Quads);
+
                 GL.TexCoord2(tx0, ty0);
-                GL.Vertex2(x0, y0);
+                GL.Vertex2(left, bottom);
 
                 GL.TexCoord2(tx1, ty0);
-                GL.Vertex2(x0 + w, y0);
+                GL.Vertex2(left + w, bottom);
 
                 GL.TexCoord2(tx1, ty1);
-                GL.Vertex2(x0 + w, y0 + h);
+                GL.Vertex2(left + w, bottom + h);
 
                 GL.TexCoord2(tx0, ty1);
-                GL.Vertex2(x0, y0 + h);
-                GL.End();
+                GL.Vertex2(left, bottom + h);
 
+                GL.End();
                 GL.Disable(EnableCap.Texture2D);
             }
 
-            if (iszooming)
+            if (iszooming || ispanning)
             {
-                Vector3d ag = ActualGaze(projF);
-                double s = 1.0 + zoomrate * zoomcount * zoomcount * zoomcount * zoomcount / 10000;
-                x0 = Math.Min(ag.X * (1.0 - s) + left * s, left);
-                y0 = Math.Min(ag.Y * (1.0 - s) + bottom * s, bottom);
-                wd = Math.Max(w * s, w - x0);
-                ht = Math.Max(h * s, h - y0);
+                if (iszooming)
+                {
+                    Vector3d ag = ActualGaze(projF);
+                    double s = 1.0 + zoomrate * zoomcount * zoomcount * zoomcount * zoomcount / 10000;
+                    _tx0 = ((s - 1.0) * projF.X / _rx + tx0) / s;
+                    _tx1 = ((s - 1.0) * projF.X / _rx + tx1) / s;
+                    _ty0 = ((s - 1.0) * projF.Y / _ry + ty0) / s;
+                    _ty1 = ((s - 1.0) * projF.Y / _ry + ty1) / s;
+
+                    byte[, ,] pre_px = MediaWindow.Vframe_repository[pframe].pix_data;
+                    vbit.FromFrame(pre_px);
+                }
+                else
+                {
+                    double s = pancount / panduration ;
+                    _tx0 = tx0 * (1.0 - s);
+                    _tx1 = tx1 - s * tx0;
+                    _ty0 = ty0;
+                    _ty1 = ty1;
+
+                    byte[, ,] pre_px = MediaWindow.Vframe_repository[cframe].pix_data;
+                    vbit.FromFrame(pre_px);
+                }
+                vbit.Update();
 
                 if (isfading) { a = Math.Min(1.0, Math.Max(0, 1.0 - (double)(0.25 * fadecount * fadecount) / ((double)fadeduration))); }//Aiko
                 else { a = 1.0; }
 
-                byte[, ,] pre_px = MediaWindow.Vframe_repository[pframe].pix_data;
-                vbit.FromFrame(pre_px);
-                vbit.Update();
-                //vbit.Draw(x0, y0, wd, ht, a);
-
                 GL.Enable(EnableCap.Texture2D);
-
-
                 GL.BindTexture(TextureTarget.Texture2D, vbit.texid);
-                GL.Color4(1.0, 1.0, 1.0, 1.0);
-
+                GL.Color4(1.0, 1.0, 1.0, a);
                 GL.Begin(PrimitiveType.Quads);
-                GL.TexCoord2(tx0, ty0);
-                GL.Vertex2(x0, y0);
 
-                GL.TexCoord2(tx1, ty0);
-                GL.Vertex2(x0 + w, y0);
+                GL.TexCoord2(_tx0, _ty0);
+                GL.Vertex2(left, bottom);
 
-                GL.TexCoord2(tx1, ty1);
-                GL.Vertex2(x0 + w, y0 + h);
+                GL.TexCoord2(_tx1, _ty0);
+                GL.Vertex2(left + w, bottom);
 
-                GL.TexCoord2(tx0, ty1);
-                GL.Vertex2(x0, y0 + h);
+                GL.TexCoord2(_tx1, _ty1);
+                GL.Vertex2(left + w, bottom + h);
+
+                GL.TexCoord2(_tx0, _ty1);
+                GL.Vertex2(left, bottom + h);
+
                 GL.End();
-
                 GL.Disable(EnableCap.Texture2D);
+
+                //Console.WriteLine("__txy01: " + _tx0 + ", " + _tx1 + ", " + _ty0 + ", " + _ty1);
             }
         }
     }

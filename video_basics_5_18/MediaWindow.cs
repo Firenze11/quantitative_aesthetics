@@ -47,13 +47,13 @@ namespace testmediasmall
         public double MouseY = 0.0; //location of the mouse along Y
 
         //global control
-        static bool checkVideo = false;
+        static bool checkVideo = true;
         static bool playbackmode = false;
         static int maxframes = 300;
-        static int minframes = 40;
+        static int minframes = 250;
         static int skippedFrameRange = 10;
         static bool blackout = true;
-        static int screenCount = 3;
+        public static int screenCount = 3;
 
         //data
         public static List<VFrame> Vframe_repository = new List<VFrame>();
@@ -65,11 +65,11 @@ namespace testmediasmall
         static EyeHelper EyeTracker = new EyeHelperTOBII();
         //C_View is a class defined in the C_geometry.cs file and is just a helper object for managing viewpoint / tragetpoint camera mechanics
         public GLutils.C_View Viewer = new GLutils.C_View();
-        static ColorAnalysis RGBColor = new ColorAnalysis();
+        static CvAnalysis CV = new CvAnalysis();
         static int frameNumber;
 
         //gaze property
-        public static Vector3d dpoint = new Vector3d();
+        public static Vector3d dpointNorm = new Vector3d();
         static byte[] gazeColor = new byte[3];
         static Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
 
@@ -280,7 +280,7 @@ namespace testmediasmall
             return nf;
         }
 
-        public static int maskN(int _i, int _j)
+        public static int maskN(double _i, double _j)
         {
             int n = 0;
             if (_j > 0.75) { n = 4; }
@@ -297,11 +297,11 @@ namespace testmediasmall
                                               EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.Y, 0.0);
             Vector3d rnorm = new Vector3d(EyeTracker.EyeRightSmooth.GazePositionScreenNorm.X,
                                           EyeTracker.EyeRightSmooth.GazePositionScreenNorm.Y, 0.0);
-            dpoint = (lnorm + rnorm) * 0.5;
-            dpoint.Y = (1.0 - dpoint.Y) * ry;
-            dpoint.X = (1.0 - dpoint.X) * rx;
+            dpointNorm = (lnorm + rnorm) * 0.5;
+            dpointNorm.Y = (1.0 - dpointNorm.Y) * ry;
+            dpointNorm.X = (1.0 - dpointNorm.X) * rx;
 
-            dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
+            dpointNorm = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
         }
 
         void CreateScreens()
@@ -323,12 +323,12 @@ namespace testmediasmall
                 }
             }
         }
-
+        
         void PlayBack()
         {
             for (int i = 0; i < Screens.Count; i++)
             {
-                Screens[i].OnTimeLapse(dpoint);
+                Screens[i].OnTimeLapse(dpointNorm);
             }
 
             for (int i = 0; i < Screens.Count; i++)
@@ -345,7 +345,8 @@ namespace testmediasmall
             if (frameNumber > minframes - startFade_gaze) { GL.Color4(255.0 / 255.0, 165.0 / 255.0, 0.0, alpha_gaze * Math.Cos((minframes - frameNumber) / minframes) * 60 * Math.PI); }
             else { GL.Color4(255.0 / 255.0, 100.0 / 255.0, 0.0, alpha_gaze); }
             GL.Begin(PrimitiveType.Points);
-            GL.Vertex2(dpoint.X, dpoint.Y);
+            //GL.Vertex2(dpointNorm.X * rx, dpointNorm.Y * ry);motionCentroid
+            GL.Vertex2(CV.motionCentroid.X , CV.motionCentroid.Y);
             GL.End();
         }
 
@@ -360,9 +361,9 @@ namespace testmediasmall
         {
             VideoPixel[,] px = Video.Pixels;
             VFrame vf = new VFrame();
-            frameNumber++;
+            //frameNumber++;
 
-            RGBColor.FrameUpdate(px, rx, ry);   //RGB histogram rendering in the ColorAnalysis file 
+            CV.FrameUpdate(px, rx, ry);   //RGB histogram rendering in the ColorAnalysis file 
 
             //vf.frame_pix_data = (byte[, ,])RGBColor.imgdataBGR.Clone();
             int j2;
@@ -374,18 +375,18 @@ namespace testmediasmall
                     j2 = ry - j - 1;
                     for (int i = 0; i < rx; i++)
                     {
-                        vf.pix_data[j, i, k] = RGBColor.imgdataBGR[j2, i, k];
+                        vf.pix_data[j, i, k] = CV.imgdataBGR[j2, i, k];
                     }
                 }
             }
 
-            vf.avgr = RGBColor.avgr;
-            vf.avgg = RGBColor.avgg;
-            vf.avgb = RGBColor.avgb;
-            vf.maskAvgRGBColor = RGBColor.maskAvgRGBColor;
-            vf.HistoR = RGBColor.HistoR;
-            vf.HistoG = RGBColor.HistoG;
-            vf.HistoB = RGBColor.HistoB;
+            vf.avgr = CV.avgr;
+            vf.avgg = CV.avgg;
+            vf.avgb = CV.avgb;
+            vf.maskAvgRGBColor = CV.maskAvgRGBColor;
+            vf.HistoR = CV.HistoR;
+            vf.HistoG = CV.HistoG;
+            vf.HistoB = CV.HistoB;
             //vf.totalMovement = totalMovement;
 
             //////////////////////////////////////////////////////////////////////////////color palette code
@@ -441,16 +442,30 @@ namespace testmediasmall
             GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
             if (!Video.IsVideoCapturing) return; //make sure that there is a camera connected and running
-            if (Video.NeedUpdate) Video.UpdateFrame(true); //recalculate the video frame if the camera got a new one
-            rx = Video.ResX;
-            ry = Video.ResY;
+            if (Video.NeedUpdate)
+            {
+                Video.UpdateFrame(true); //recalculate the video frame if the camera got a new one
+                rx = Video.ResX;
+                ry = Video.ResY;
+
+                if (Vframe_repository.Count <= maxframes) 
+                {
+                    BuildVfRepo();
+                    if (Vframe_repository.Count > 1)
+                    {
+                        if (Vframe_repository[Vframe_repository.Count - 1].pix_data == Vframe_repository[Vframe_repository.Count - 2].pix_data)
+                            Console.WriteLine("vf repeated");
+                    }
+                }
+            }
 
             if (Vframe_repository.Count >= minframes && !playbackmode)
             {
                 CalibrationVideo.Stop();
 				playbackmode = true;
                 CreateScreens();
-                Screens[0].ison = true;
+                Screens[1].ison = true;
+                Console.WriteLine("playing back, VFR.C = " + Vframe_repository.Count);
             }
             if (playbackmode)
 			{
@@ -466,12 +481,6 @@ namespace testmediasmall
                 else { DrawFullScreen (CalibrationVideo); }
                 VisualizeGaze();
             }
-
-            if (Vframe_repository.Count <= maxframes)
-            {
-                BuildVfRepo();
-            }
-
         }
     }
 }

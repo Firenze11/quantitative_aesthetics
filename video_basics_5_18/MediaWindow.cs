@@ -18,7 +18,6 @@ namespace testmediasmall
 {
     public class VFrame
     {
-        //test 
         public byte[, ,] pix_data = null; //[j2, i, k];
         public byte[, ,] recreate_pix_data = null; //[j2, i, k];
         //qualifiers

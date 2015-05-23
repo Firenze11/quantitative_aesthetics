@@ -19,6 +19,7 @@ namespace testmediasmall
     public class VFrame
     {
         public byte[, ,] pix_data = null; //[j2, i, k];
+        public byte[, ,] recreate_pix_data = null; //[j2, i, k];
         //qualifiers
         public double avgr = 0.0;
         public double avgg = 0.0;
@@ -49,8 +50,8 @@ namespace testmediasmall
         //global control
         static bool checkVideo = true;
         static bool playbackmode = false;
-        static int maxframes = 300;
-        static int minframes = 250;
+        static int maxframes = 600;
+        static int minframes = 50;
         static int skippedFrameRange = 10;
         static bool blackout = true;
         public static int screenCount = 3;
@@ -92,10 +93,11 @@ namespace testmediasmall
             CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi"); 
             //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\birdman3_converted.avi");
             //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
-            Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
+            Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
 
             System.Threading.Thread.Sleep(2000);
-            Video.SetResolution(120, 80);   //reduce resolution so that each frame is taken into the repository
+            Video.SetResolution(360, 240);   //reduce resolution so that each frame is taken into the repository
             CalibrationVideo.SetResolution(360, 240);
         }
  
@@ -357,6 +359,13 @@ namespace testmediasmall
             Videoimage.Draw(0.0, 0.0, rx, ry, 1.0);
         }
 
+        double ColorDist(byte[] px, RGBA_Quad quad)
+        {
+            return Math.Sqrt((quad.R - px[2]) * (quad.R - px[2]) 
+                             + (quad.G - px[1]) * (quad.G - px[1]) 
+                             + (quad.B - px[0]) * (quad.B - px[0]));
+        }
+
         void BuildVfRepo() /// need modify
         {
             VideoPixel[,] px = Video.Pixels;
@@ -365,18 +374,58 @@ namespace testmediasmall
 
             CV.FrameUpdate(px, rx, ry);   //RGB histogram rendering in the ColorAnalysis file 
 
+            //////////////////////////////////////////////////////////////////////////////color palette code
+            ColorQuant ColorQuantizer = new ColorQuant();
+            Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(Video, 25);
+            //Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 16);    //sort by frequency
+            Colormap DiffColorMap = ColorQuantizer.SortByDifference(initialCMap);   //sort intialCMap again by the different; distinct color
+            //Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);   //sort intialCMap by hue
+            var a = ColorQuantizer.TranslateHSV(DiffColorMap[0]);
+            vf.domiHue = a[0];
+            ////////////////////////////////////////////////////////////////////////end of color palette cod
             //vf.frame_pix_data = (byte[, ,])RGBColor.imgdataBGR.Clone();
+
+            double threshold = 5.0;
+
             int j2;
             vf.pix_data = new byte[ry, rx, 3];
-            for (int k = 0; k < 3; k++)
+            vf.recreate_pix_data = new byte[ry, rx, 3];
+            for (int j = 0; j < ry; j++)
             {
-                for (int j = 0; j < ry; j++)
+                j2 = ry - j - 1;
+                for (int i = 0; i < rx; i++)
                 {
-                    j2 = ry - j - 1;
-                    for (int i = 0; i < rx; i++)
+                    for (int k = 0; k < 3; k++)
                     {
                         vf.pix_data[j, i, k] = CV.imgdataBGR[j2, i, k];
                     }
+                    double min = 442.0;
+                    int minId = 0;
+                    for (int k = 0; k < DiffColorMap.Count; k++)
+                    {
+                        byte[] px_d = {CV.imgdataBGR[j2, i, 0], CV.imgdataBGR[j2, i, 1], CV.imgdataBGR[j2, i, 2]};
+                        double dist = ColorDist(px_d, DiffColorMap[k]);
+                        if ( dist < threshold )
+                        {
+                            minId = k;
+                            break;
+                        }
+                        else
+                        {
+                            if (dist < min)
+                            {
+                                min = dist;
+                                minId = k;
+                            }
+                        }
+                    }
+                    //vf.recreate_pix_data[j, i, 2] = initialCMap[minId].R;
+                    //vf.recreate_pix_data[j, i, 1] = initialCMap[minId].G;
+                    //vf.recreate_pix_data[j, i, 0] = initialCMap[minId].B;
+
+                    vf.recreate_pix_data[j, i, 2] = DiffColorMap[minId].R;
+                    vf.recreate_pix_data[j, i, 1] = DiffColorMap[minId].G;
+                    vf.recreate_pix_data[j, i, 0] = DiffColorMap[minId].B;
                 }
             }
 
@@ -389,14 +438,6 @@ namespace testmediasmall
             vf.HistoB = CV.HistoB;
             //vf.totalMovement = totalMovement;
 
-            //////////////////////////////////////////////////////////////////////////////color palette code
-            ColorQuant ColorQuantizer = new ColorQuant();
-            Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 20);    //sort by frequency
-            Colormap DiffColorMap = ColorQuantizer.SortByDifference(initialCMap);   //sort intialCMap again by the different; distinct color
-            Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);   //sort intialCMap by hue
-            var a = ColorQuantizer.TranslateHSV(DiffColorMap[0]);
-            vf.domiHue = a[0];
-            ////////////////////////////////////////////////////////////////////////end of color palette cod
 
             for (int j = 0; j < ry; ++j)
             {
@@ -464,7 +505,11 @@ namespace testmediasmall
                 CalibrationVideo.Stop();
 				playbackmode = true;
                 CreateScreens();
-                Screens[1].ison = true;
+                Screens[2].ison = true;
+                //for (int i = 0; i < screenCount ; i++)
+                //{
+                //    Screens[i].ison = true;
+                //}
                 Console.WriteLine("playing back, VFR.C = " + Vframe_repository.Count);
             }
             if (playbackmode)

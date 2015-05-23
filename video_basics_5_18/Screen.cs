@@ -18,7 +18,7 @@ namespace testmediasmall
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
         public enum Mode { zoom, sequence, motion, pan}
-        public Mode mode = Mode.pan;
+        public Mode mode = Mode.zoom;
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
 
@@ -50,8 +50,8 @@ namespace testmediasmall
         //pan control
         public bool ispanning = false;
         int pancount = 0;
-        static int panduration = 60;
-        static double panrate = 0.01;
+        static int panduration = 30;
+        public int pandir = 0;
 
         //motion control
         public bool ismotion = false;
@@ -84,7 +84,7 @@ namespace testmediasmall
         }
         static int prev(int n)
         {
-            return (n + 4) % MediaWindow.screenCount;
+            return (n + 2) % MediaWindow.screenCount;
         }
         public Screen(int _id, double _left, double _bottom, double _w, double _h)
         {
@@ -116,7 +116,6 @@ namespace testmediasmall
                 deviation = 0.0;
                 gazeColor[0] = 255; gazeColor[1] = 255; gazeColor[2] = 255;
                 gazeVector = new Vector3d(0.0, 0.0, 0.0);
-                /////////////////////////////////////////////////////////////////reset gaze motion, gaze etc too
             }
         }
         private Vector3d ProjectedGaze(Vector3d gazeInput)
@@ -248,32 +247,39 @@ namespace testmediasmall
         }
         void DoPan()
         {
-            double dir = Vector3d.Dot(new Vector3d(-1.0, 0.0, 0.0), gazeVector);
             if (ispanning) //post fixation period lasts for zoomduration frames
             {
                 if (pancount > panduration)
                 {
                     ispanning = false;
+                    framecount = 0;
                     Console.WriteLine(id + " stops panning");
-                    return;
                 }
-                pancount++;
-                Console.WriteLine(id + " pancount = " + pancount);
-            }
-            if (dir > 0.0) //any condition that triggers motion mode, maybe gaze optical flow....
-            {
-
-                if ( !MediaWindow.Screens[prev(id)].ispanning)
+                else
                 {
-                    MediaWindow.Screens[prev(id)].ison = true;
-                    MediaWindow.Screens[prev(id)].ispanning = true;
-                    MediaWindow.Screens[prev(id)].pancount = 0;
-                    MediaWindow.Screens[prev(id)].cframe = cframe;
-                    Console.WriteLine(prev(id) + " is panning, cframe = " + cframe);
+                    pancount++;
                 }
             }
             else
             {
+                if (Vector3d.Dot(new Vector3d(-1.0, 0.0, 0.0), gazeVector) > 0.0 && framecount > transitionInterval ) 
+                {
+                    //MediaWindow.Screens[prev(id)].ison = true;
+                    ispanning = true;
+                    pandir = -1;
+                    pancount = 0;
+                    //MediaWindow.Screens[prev(id)].cframe = cframe;
+                    Console.WriteLine(id + " is panning, cframe = " + cframe + " pandir = " + pandir);
+                }
+                else if (Vector3d.Dot(new Vector3d(1.0, 0.0, 0.0), gazeVector) > 0.0 && framecount > transitionInterval) //any condition that triggers motion mode, maybe gaze optical flow....
+                {
+                    //MediaWindow.Screens[prev(id)].ison = true;
+                    ispanning = true;
+                    pandir = 1;
+                    pancount = 0;
+                    //MediaWindow.Screens[prev(id)].cframe = cframe;
+                    Console.WriteLine(id + " is panning, cframe = " + cframe + " pandir = " + pandir);
+                }
             }
         }
         private void DoMotion()
@@ -346,7 +352,11 @@ namespace testmediasmall
             {
                 pframe = 0;
             }
-
+            if (id > 0 && cframe >= 10 && MediaWindow.Screens[prev(id)].ison == false)
+            {
+                MediaWindow.Screens[id - 1].ison = true;
+                MediaWindow.Screens[id - 1].cframe = 0;
+            }
             //Console.WriteLine(id + " cf = " + cframe);
         }
 
@@ -354,7 +364,6 @@ namespace testmediasmall
         {
             // if (!ison) { return; }
             // if (oncount > onduration) { ison = false; return; }
-
             FrameUpdate();
             bool islookedat = IsLookedAt(gazeInput);
             if (islookedat)
@@ -380,14 +389,14 @@ namespace testmediasmall
                 //{
                 for (int i = motioncount; i < 1; i += motionInterval)
                 {
-                    vbit.FromFrame(MediaWindow.Vframe_repository[cframe - i].pix_data);
+                    vbit.FromFrame(MediaWindow.Vframe_repository[cframe - i].recreate_pix_data);
                     vbit.Draw(left, bottom, w, h, a);
                 }
             }
 
             else if (!iszooming || (iszooming && isfading))
             {
-                byte[, ,] px = MediaWindow.Vframe_repository[cframe].pix_data;
+                byte[, ,] px = MediaWindow.Vframe_repository[cframe].recreate_pix_data;
                 vbit.FromFrame(px);
                 vbit.Update();
                 //vbit.Draw(x0, y0, wd, ht, 1.0);
@@ -424,18 +433,26 @@ namespace testmediasmall
                     _ty0 = ((s - 1.0) * projF.Y / _ry + ty0) / s;
                     _ty1 = ((s - 1.0) * projF.Y / _ry + ty1) / s;
 
-                    byte[, ,] pre_px = MediaWindow.Vframe_repository[pframe].pix_data;
+                    byte[, ,] pre_px = MediaWindow.Vframe_repository[pframe].recreate_pix_data;
                     vbit.FromFrame(pre_px);
                 }
                 else
                 {
-                    double s = pancount / panduration ;
-                    _tx0 = tx0 * (1.0 - s);
-                    _tx1 = tx1 - s * tx0;
+                    double s = (double)pancount / (double)panduration;
+                    if (pandir == -1)
+                    {
+                        _tx0 = tx0 * (1.0 - s);
+                        _tx1 = tx1 - s * tx0;
+                    }
+                    else
+                    {
+                        _tx0 = (1.0 - tx1) * s + tx0;
+                        _tx1 = s + (1.0 - s) * tx1; 
+                    }
                     _ty0 = ty0;
                     _ty1 = ty1;
 
-                    byte[, ,] pre_px = MediaWindow.Vframe_repository[cframe].pix_data;
+                    byte[, ,] pre_px = MediaWindow.Vframe_repository[cframe].recreate_pix_data;
                     vbit.FromFrame(pre_px);
                 }
                 vbit.Update();

@@ -47,10 +47,11 @@ namespace testmediasmall
         public double MouseY = 0.0; //location of the mouse along Y
 
         //global control
-        static bool checkVideo = true;
+        static bool checkVideo = false;
         static bool playbackmode = false;
-        public static int maxframes = 900;
-        static int minframes = 50;
+        static int maxframes = 1000;
+        static int minframes = 40;
+
         static int skippedFrameRange = 10;
         static bool blackout = true;
         public static int screenCount = 3;
@@ -92,8 +93,8 @@ namespace testmediasmall
             //CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi"); 
             Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
             //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
-            //Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
-            //Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
+           //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
+
 
             System.Threading.Thread.Sleep(2000);
             Video.SetResolution(360, 240);   //reduce resolution so that each frame is taken into the repository
@@ -297,9 +298,10 @@ namespace testmediasmall
                                           EyeTracker.EyeRightSmooth.GazePositionScreenNorm.Y, 0.0);
             dpoint = (lnorm + rnorm) * 0.5;
             dpoint.Y = (1.0 - dpoint.Y) * ry;
-            dpoint.X = dpoint.X * rx;
 
+            dpoint.X = dpoint.X * rx;
             dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
+
         }
 
         void CreateScreens()
@@ -350,8 +352,8 @@ namespace testmediasmall
             if (frameNumber > minframes - startFade_gaze) { GL.Color4(255.0 / 255.0, 165.0 / 255.0, 0.0, alpha_gaze * Math.Cos((minframes - frameNumber) / minframes) * 60 * Math.PI); }
             else { GL.Color4(255.0 / 255.0, 100.0 / 255.0, 0.0, alpha_gaze); }
             GL.Begin(PrimitiveType.Points);
-            //GL.Vertex2(dpointNorm.X * rx, dpointNorm.Y * ry);motionCentroid
-            GL.Vertex2(CV.motionCentroid.X , CV.motionCentroid.Y);
+            GL.Vertex2(dpoint.X, dpoint.Y);
+            //GL.Vertex2(CV.motionCentroid.X , CV.motionCentroid.Y);    //motion centroid check
             GL.End();
         }
 
@@ -393,33 +395,33 @@ namespace testmediasmall
                     {
                         vf.pix_data[j, i, k] = CV.imgdataBGR[j2, i, k];
                     }
-                    double min = 442.0;
-                    int minId = 0;
-                    for (int k = 0; k < DiffColorMap.Count; k++)
-                    {
-                        byte[] px_d = {CV.imgdataBGR[j2, i, 0], CV.imgdataBGR[j2, i, 1], CV.imgdataBGR[j2, i, 2]};
-                        double dist = ColorDist(px_d, DiffColorMap[k]);
-                        if ( dist < threshold )
-                        {
-                            minId = k;
-                            break;
-                        }
-                        else
-                        {
-                            if (dist < min)
-                            {
-                                min = dist;
-                                minId = k;
-                            }
-                        }
-                    }
-                    //vf.recreate_pix_data[j, i, 2] = initialCMap[minId].R;
-                    //vf.recreate_pix_data[j, i, 1] = initialCMap[minId].G;
-                    //vf.recreate_pix_data[j, i, 0] = initialCMap[minId].B;
+                    //double min = 442.0;
+                    //int minId = 0;
+                    //for (int k = 0; k < DiffColorMap.Count; k++)
+                    //{
+                    //    byte[] px_d = { CV.imgdataBGR[j2, i, 0], CV.imgdataBGR[j2, i, 1], CV.imgdataBGR[j2, i, 2] };
+                    //    double dist = ColorDist(px_d, DiffColorMap[k]);
+                    //    if (dist < threshold)
+                    //    {
+                    //        minId = k;
+                    //        break;
+                    //    }
+                    //    else
+                    //    {
+                    //        if (dist < min)
+                    //        {
+                    //            min = dist;
+                    //            minId = k;
+                    //        }
+                    //    }
+                    //}
+                    ////vf.recreate_pix_data[j, i, 2] = initialCMap[minId].R;
+                    ////vf.recreate_pix_data[j, i, 1] = initialCMap[minId].G;
+                    ////vf.recreate_pix_data[j, i, 0] = initialCMap[minId].B;
 
-                    vf.recreate_pix_data[j, i, 2] = DiffColorMap[minId].R;
-                    vf.recreate_pix_data[j, i, 1] = DiffColorMap[minId].G;
-                    vf.recreate_pix_data[j, i, 0] = DiffColorMap[minId].B;
+                    //vf.recreate_pix_data[j, i, 2] = DiffColorMap[minId].R;
+                    //vf.recreate_pix_data[j, i, 1] = DiffColorMap[minId].G;
+                    //vf.recreate_pix_data[j, i, 0] = DiffColorMap[minId].B;
                 }
             }
             vf.avgr = CV.avgr;
@@ -436,7 +438,7 @@ namespace testmediasmall
             Vframe_repository.Add(vf);
         }
 
-        public void OnFrameUpdate()  //executed 20 times per second.
+        public void OnFrameUpdate()  //executed 20d times per second.
         {
             GL.ClearColor(0.0f, 0.6f, 0.6f, 1.0f);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -483,9 +485,9 @@ namespace testmediasmall
             {
                 if (!CalibrationVideo.IsVideoCapturing) return;
                 if (CalibrationVideo.NeedUpdate) CalibrationVideo.UpdateFrame(true);
-
                 if (checkVideo) { DrawFullScreen (Video); }
                 else { DrawFullScreen (CalibrationVideo); }
+                CalculateGaze();
                 VisualizeGaze();
             }
         }

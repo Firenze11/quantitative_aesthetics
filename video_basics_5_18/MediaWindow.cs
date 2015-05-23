@@ -300,7 +300,7 @@ namespace testmediasmall
             dpoint.Y = (1.0 - dpoint.Y) * ry;
 
             dpoint.X = dpoint.X * rx;
-            dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
+            //dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
 
         }
 

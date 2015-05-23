@@ -86,7 +86,10 @@ namespace testmediasmall
             mediawin.Initialize();
 
             loaded = true;
-            timer.Interval = 70;
+            //if (MediaWindow.Vframe_repository.Count >= MediaWindow.maxframes)
+            //    timer.Interval = 120;
+            //else
+                timer.Interval = 70;
             timer.Enabled = true;
             timer.Start();
             timer.Tick += new EventHandler(timer_Tick);
@@ -125,12 +128,14 @@ namespace testmediasmall
             
             GL.Viewport(0, 0, mediawin.Width, mediawin.Height); // Use all of the glControl painting area
 
+            Console.WriteLine("frame update on resize");
             UpdateFrame();
         }
 
         private void GLviewport_Paint(object sender, PaintEventArgs e)
         {
             if (!loaded) return;
+            Console.WriteLine("frame update on paint");
             UpdateFrame();
         }
 

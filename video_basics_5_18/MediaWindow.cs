@@ -49,7 +49,7 @@ namespace testmediasmall
         //global control
         static bool checkVideo = true;
         static bool playbackmode = false;
-        static int maxframes = 900;
+        public static int maxframes = 900;
         static int minframes = 50;
         static int skippedFrameRange = 10;
         static bool blackout = true;
@@ -107,16 +107,6 @@ namespace testmediasmall
             CalibrationVideo.Stop();
         }
 
-        public static int other(int n)
-        {
-            return (n + 1) % Screens.Count;
-            //if (_lr == 0) { return 1; }
-            //else if (_lr == 1) { return 0; }
-            //else { return -1; }
-            //if (n < Screens.Count - 1) { return n + 1; }
-            //else { return 0; }
-        }
-
         private static int sorter(VFrame a, VFrame b)
         {
             //return a.avgr.CompareTo(b.avgr);
@@ -164,6 +154,7 @@ namespace testmediasmall
             return nf;
         }
 
+        //not used
         public static int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB, bool complementary)
         {
             int nf = 0;
@@ -197,7 +188,6 @@ namespace testmediasmall
             }
             return nf;
         }
-
         public static int maskOpticalFlowTransition(int analyzedFrame, int gazeMaskNum, double gazeOptFlowMovement, Vector3d gazeOptFlowVector, bool complementary)
         {
             int nf = 0;
@@ -253,7 +243,6 @@ namespace testmediasmall
             //}
             return nf;
         }
-
         public static int motionPictureWithGaze(int analyzedFrame)
         {
             int nf = 0;
@@ -280,6 +269,7 @@ namespace testmediasmall
             //}
             return nf;
         }
+        //end of not used
 
         public static int maskN(double _i, double _j)
         {
@@ -290,6 +280,13 @@ namespace testmediasmall
             else if (_i > 0.75) { n = 2; }
             else { n = 0; }
             return n;
+        }
+
+        static double ColorDist(byte[] px, RGBA_Quad quad)
+        {
+            return Math.Sqrt((quad.R - px[2]) * (quad.R - px[2])
+                             + (quad.G - px[1]) * (quad.G - px[1])
+                             + (quad.B - px[0]) * (quad.B - px[0]));
         }
 
         void CalculateGaze()
@@ -365,20 +362,12 @@ namespace testmediasmall
             Videoimage.Draw(0.0, 0.0, rx, ry, 1.0);
         }
 
-        double ColorDist(byte[] px, RGBA_Quad quad)
-        {
-            return Math.Sqrt((quad.R - px[2]) * (quad.R - px[2]) 
-                             + (quad.G - px[1]) * (quad.G - px[1]) 
-                             + (quad.B - px[0]) * (quad.B - px[0]));
-        }
-
         void BuildVfRepo() /// need modify
         {
             VideoPixel[,] px = Video.Pixels;
             VFrame vf = new VFrame();
-            //frameNumber++;
-
-            CV.FrameUpdate(px, rx, ry);   //RGB histogram rendering in the ColorAnalysis file 
+            frameNumber++;
+            CV.FrameUpdate(px, rx, ry);   
 
             //////////////////////////////////////////////////////////////////////////////color palette code
             ColorQuant ColorQuantizer = new ColorQuant();
@@ -389,7 +378,6 @@ namespace testmediasmall
             var a = ColorQuantizer.TranslateHSV(DiffColorMap[0]);
             vf.domiHue = a[0];
             ////////////////////////////////////////////////////////////////////////end of color palette cod
-            //vf.frame_pix_data = (byte[, ,])RGBColor.imgdataBGR.Clone();
 
             double threshold = 5.0;
 

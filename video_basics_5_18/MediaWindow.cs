@@ -18,6 +18,7 @@ namespace testmediasmall
 {
     public class VFrame
     {
+        //test 
         public byte[, ,] pix_data = null; //[j2, i, k];
         public byte[, ,] recreate_pix_data = null; //[j2, i, k];
         //qualifiers
@@ -88,12 +89,12 @@ namespace testmediasmall
             VideoIN.EnumCaptureDevices();
 
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
-            //CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
-            CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi"); 
-            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\birdman3_converted.avi");
+            CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
+            //CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi"); 
+            Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
             //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
             //Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
-            Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
 
             System.Threading.Thread.Sleep(2000);
             Video.SetResolution(360, 240);   //reduce resolution so that each frame is taken into the repository

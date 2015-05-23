@@ -31,10 +31,9 @@ namespace testmediasmall
         public RGBHisto HistoG;
         public RGBHisto HistoB;
         public int frameNumber;
-        public double optFlowMovement;
-        public Vector3d optFlowAngle;
-        public double[] maskOpticalFlowMovement = new double[5];
-        public Vector3d[] maskOpticalFlowVector = new Vector3d[5];
+        public Vector2d motionCentroid = new Vector2d();
+        public double[] motionMaskSum = new double[5];
+        public Vector2d[] motionMaskDir = new Vector2d [5];
     }
 
     public class MediaWindow
@@ -50,7 +49,7 @@ namespace testmediasmall
         //global control
         static bool checkVideo = true;
         static bool playbackmode = false;
-        static int maxframes = 600;
+        static int maxframes = 900;
         static int minframes = 50;
         static int skippedFrameRange = 10;
         static bool blackout = true;
@@ -70,7 +69,7 @@ namespace testmediasmall
         static int frameNumber;
 
         //gaze property
-        public static Vector3d dpointNorm = new Vector3d();
+        public static Vector3d dpoint = new Vector3d();
         static byte[] gazeColor = new byte[3];
         static Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
 
@@ -202,83 +201,83 @@ namespace testmediasmall
         public static int maskOpticalFlowTransition(int analyzedFrame, int gazeMaskNum, double gazeOptFlowMovement, Vector3d gazeOptFlowVector, bool complementary)
         {
             int nf = 0;
-            double minTotalMovement = 100000;
-            double maxTotalMovement = 0;
-            double optFlowAngleDiff = 0.0;
-            double totalMovementDiff = 0.0;
+            //double minTotalMovement = 100000;
+            //double maxTotalMovement = 0;
+            //double optFlowAngleDiff = 0.0;
+            //double totalMovementDiff = 0.0;
 
-            for (int i = 0; i < Vframe_repository.Count; i++)
-            {
-                if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
-                {
-                    Vector3d gazeAngle = gazeOptFlowVector.Normalized();
-                    Vector3d newFrameAngleVector = Vframe_repository[i].maskOpticalFlowVector[gazeMaskNum].Normalized();
+            //for (int i = 0; i < Vframe_repository.Count; i++)
+            //{
+            //    if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
+            //    {
+            //        Vector3d gazeAngle = gazeOptFlowVector.Normalized();
+            //        Vector3d newFrameAngleVector = Vframe_repository[i].maskOpticalFlowVector[gazeMaskNum].Normalized();
 
-                    totalMovementDiff = Math.Abs(gazeOptFlowMovement - Vframe_repository[i].maskOpticalFlowMovement[gazeMaskNum]);
-                    optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, newFrameAngleVector);    //1 if parallel
+            //        totalMovementDiff = Math.Abs(gazeOptFlowMovement - Vframe_repository[i].maskOpticalFlowMovement[gazeMaskNum]);
+            //        optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, newFrameAngleVector);    //1 if parallel
 
-                    if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be ~ +/- 30 degree
-                    {
-                        if (complementary) //show still image if lots of movement, etc 
-                        {
-                            if (totalMovementDiff > maxTotalMovement)
-                            {
-                                maxTotalMovement = totalMovementDiff;
-                                nf = i;
-                            }
-                        }
-                        else if (totalMovementDiff < minTotalMovement)
-                        {
-                            minTotalMovement = totalMovementDiff;
-                            nf = i;
-                        }
-                    }
-                    else if (Math.Abs(optFlowAngleDiff) > 0.5) //angle difference should be ~ +/- 30 degree
-                    {
-                        if (complementary) //show still image if lots of movement, etc 
-                        {
-                            if (totalMovementDiff > maxTotalMovement)
-                            {
-                                maxTotalMovement = totalMovementDiff;
-                                nf = i;
-                            }
-                        }
-                        else if (totalMovementDiff < minTotalMovement)
-                        {
-                            minTotalMovement = totalMovementDiff;
-                            nf = i;
-                        }
-                    }
-                    else nf = analyzedFrame; // no other frame matches then don't switch scenes
-                }
-            }
+            //        if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be ~ +/- 30 degree
+            //        {
+            //            if (complementary) //show still image if lots of movement, etc 
+            //            {
+            //                if (totalMovementDiff > maxTotalMovement)
+            //                {
+            //                    maxTotalMovement = totalMovementDiff;
+            //                    nf = i;
+            //                }
+            //            }
+            //            else if (totalMovementDiff < minTotalMovement)
+            //            {
+            //                minTotalMovement = totalMovementDiff;
+            //                nf = i;
+            //            }
+            //        }
+            //        else if (Math.Abs(optFlowAngleDiff) > 0.5) //angle difference should be ~ +/- 30 degree
+            //        {
+            //            if (complementary) //show still image if lots of movement, etc 
+            //            {
+            //                if (totalMovementDiff > maxTotalMovement)
+            //                {
+            //                    maxTotalMovement = totalMovementDiff;
+            //                    nf = i;
+            //                }
+            //            }
+            //            else if (totalMovementDiff < minTotalMovement)
+            //            {
+            //                minTotalMovement = totalMovementDiff;
+            //                nf = i;
+            //            }
+            //        }
+            //        else nf = analyzedFrame; // no other frame matches then don't switch scenes
+            //    }
+            //}
             return nf;
         }
 
         public static int motionPictureWithGaze(int analyzedFrame)
         {
             int nf = 0;
-            double minTotalMovement = 100000;
-            double optFlowAngleDiff = 0.0;
-            double totalMovementDiff = 0.0;
+            //double minTotalMovement = 100000;
+            //double optFlowAngleDiff = 0.0;
+            //double totalMovementDiff = 0.0;
 
-            for (int i = 0; i < Vframe_repository.Count; i++)
-            {
-                if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
-                {
-                    optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, Vframe_repository[i].optFlowAngle);    //1 if parallel
-                    totalMovementDiff = Math.Abs(Vframe_repository[analyzedFrame].totalMovement - Vframe_repository[i].totalMovement);
+            //for (int i = 0; i < Vframe_repository.Count; i++)
+            //{
+            //    if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
+            //    {
+            //        optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, Vframe_repository[i].optFlowAngle);    //1 if parallel
+            //        totalMovementDiff = Math.Abs(Vframe_repository[analyzedFrame].totalMovement - Vframe_repository[i].totalMovement);
 
-                    if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be within +/- 30 degree
-                    {
-                        if (totalMovementDiff < minTotalMovement)
-                        {
-                            minTotalMovement = totalMovementDiff;
-                            nf = i;
-                        }
-                    }
-                }
-            }
+            //        if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be within +/- 30 degree
+            //        {
+            //            if (totalMovementDiff < minTotalMovement)
+            //            {
+            //                minTotalMovement = totalMovementDiff;
+            //                nf = i;
+            //            }
+            //        }
+            //    }
+            //}
             return nf;
         }
 
@@ -299,11 +298,11 @@ namespace testmediasmall
                                               EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.Y, 0.0);
             Vector3d rnorm = new Vector3d(EyeTracker.EyeRightSmooth.GazePositionScreenNorm.X,
                                           EyeTracker.EyeRightSmooth.GazePositionScreenNorm.Y, 0.0);
-            dpointNorm = (lnorm + rnorm) * 0.5;
-            dpointNorm.Y = (1.0 - dpointNorm.Y) * ry;
-            dpointNorm.X = (1.0 - dpointNorm.X) * rx;
+            dpoint = (lnorm + rnorm) * 0.5;
+            dpoint.Y = (1.0 - dpoint.Y) * ry;
+            dpoint.X = dpoint.X * rx;
 
-            dpointNorm = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
+            dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
         }
 
         void CreateScreens()
@@ -317,8 +316,15 @@ namespace testmediasmall
                     double w = (double)rx / (double)screenCount;
                     double h = (double)ry; /// (double)screenCount;
                     Screen sc = new Screen(i, l, b, w, h);
-                    sc.tx0 = i / (double)screenCount;
-                    sc.tx1 = (i + 1) / (double)screenCount;
+
+                    //if (i == 0) { sc.tx0 = (double)i / (double)screenCount; } 
+                    sc.tx0 = (double)i / (double)screenCount;
+                    //else { sc.tx0 = (double)i / (double)screenCount - 1.0 / 24.0; }
+
+                    //if (i == 0) { sc.tx1 = ((double)i + 1.0) / (double)screenCount + 2.0 / 24.0; }
+                    sc.tx1 = ((double)i + 1.0) / (double)screenCount; 
+                    //else { sc.tx1 = ((double)i + 1.0) / (double)screenCount + 1.0 / 24.0; }
+
                     sc.ty0 = 0.0;
                     sc.ty1 = 1.0;
                     Screens.Add(sc);
@@ -330,7 +336,7 @@ namespace testmediasmall
         {
             for (int i = 0; i < Screens.Count; i++)
             {
-                Screens[i].OnTimeLapse(dpointNorm);
+                Screens[i].OnTimeLapse(dpoint);
             }
 
             for (int i = 0; i < Screens.Count; i++)
@@ -428,7 +434,6 @@ namespace testmediasmall
                     vf.recreate_pix_data[j, i, 0] = DiffColorMap[minId].B;
                 }
             }
-
             vf.avgr = CV.avgr;
             vf.avgg = CV.avgg;
             vf.avgb = CV.avgb;
@@ -436,41 +441,10 @@ namespace testmediasmall
             vf.HistoR = CV.HistoR;
             vf.HistoG = CV.HistoG;
             vf.HistoB = CV.HistoB;
-            //vf.totalMovement = totalMovement;
+            vf.motionCentroid = CV.motionCentroid;
+            vf.motionMaskSum = CV.motionMaskSum;
+            vf.motionMaskDir = CV.motionMaskDir;
 
-
-            for (int j = 0; j < ry; ++j)
-            {
-                for (int i = 0; i < rx; ++i)
-                {
-                    //optical flow 
-                    double diff = Math.Abs(px[j, i].V - px[j, i].V0);
-                    vf.totalMovement += diff;
-
-                    //average optical flow angle 
-                    Vector3d angle = new Vector3d(px[j, i].mx, px[j, i].my, 0);
-                    vf.optFlowAngle += angle;
-                    vf.optFlowMovement /= (rx * ry);
-                }
-            }
-
-            //optical flow for each mask 
-            int[] maskPixCount = new int[5];
-            for (int j = 0; j < ry; ++j)
-            {
-                for (int i = 0; i < rx; ++i)
-                {
-                    double diff = Math.Abs(px[j, i].V - px[j, i].V0);
-                    Vector3d angle = new Vector3d(px[j, i].mx, px[j, i].my, 0);
-                    maskPixCount[maskN(i, j)]++;
-                    vf.maskOpticalFlowMovement[maskN(i, j)] += diff;
-                    vf.maskOpticalFlowVector[maskN(i, j)] += angle;
-                }
-            }
-            for (int i = 0; i < 5; i++)
-            {
-                vf.maskOpticalFlowMovement[i] = vf.maskOpticalFlowMovement[i] / (double)maskPixCount[i];
-            }
             Vframe_repository.Add(vf);
         }
 

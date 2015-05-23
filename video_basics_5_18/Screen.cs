@@ -190,8 +190,7 @@ namespace testmediasmall
                 }
             }
             //gaze optical flow////NOT FINISHED
-            gazeOptFlow = MediaWindow.Vframe_repository[cframe].maskOpticalFlowMovement[num];
-            gazeOptFlowVector = MediaWindow.Vframe_repository[cframe].maskOpticalFlowVector[num];
+            
         }
 
         private void DoZoom()
@@ -338,6 +337,7 @@ namespace testmediasmall
 
         private void FrameUpdate()
         {
+            if (!ison) { return; }
             framecount++;
             cframe++;
             if (iszooming)
@@ -352,12 +352,12 @@ namespace testmediasmall
             {
                 pframe = 0;
             }
-            if (id > 0 && cframe >= 10 && MediaWindow.Screens[prev(id)].ison == false)
+            if (id > 0 && cframe >= 10 && MediaWindow.Screens[id - 1].ison == false)
             {
                 MediaWindow.Screens[id - 1].ison = true;
                 MediaWindow.Screens[id - 1].cframe = 0;
+                Console.WriteLine((id - 1) + " is on, cf = " + MediaWindow.Screens[id - 1].cframe);
             }
-            //Console.WriteLine(id + " cf = " + cframe);
         }
 
         public void OnTimeLapse(Vector3d gazeInput)

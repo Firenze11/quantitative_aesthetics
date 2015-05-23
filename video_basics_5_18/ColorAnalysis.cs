@@ -51,10 +51,9 @@ namespace testmediasmall
 
         //motion
         public Vector2d motionCentroid;
+        public double[] motionMaskSum;
+        public Vector2d[] motionMaskDir;
         double motionSum;
-        double[] motionMaskSum;
-        Vector2d[] motionMaskDir;
-        string[] motionMaskDirStr;
 
         //mask average rgb
         public float avgr = 0;
@@ -170,27 +169,6 @@ namespace testmediasmall
                 motionMaskDir[i] /= ((double)mask_pix_n[i]/1000.0);
                 //Console.Write((int)motionMaskDir[i].X + ", " + (int)motionMaskDir[i].Y + ";;; ");
             }
-
-            //motionMaskDirStr = new string[5];
-            //for (int i = 0; i < 6; i++)
-            //{
-            //    if(motionMaskDir[i].X < motionMaskDir[i].Y)
-            //    {
-            //        if (motionMaskDir[i].X < -1 * motionMaskDir[i].Y)
-            //            motionMaskDirStr[i] = " left ";
-            //        else
-            //            motionMaskDirStr[i] = "  up  ";
-            //    }
-            //    else
-            //    {
-            //        if (motionMaskDir[i].X < -1 * motionMaskDir[i].Y)
-            //            motionMaskDirStr[i] = " down ";
-            //        else
-            //            motionMaskDirStr[i] = "right ";
-            //    }
-            //    Console.Write(motionMaskDirStr[i]);
-            //}
-            //Console.WriteLine();
 
             //creates Grayscale image for openCV
             if (gray == null)

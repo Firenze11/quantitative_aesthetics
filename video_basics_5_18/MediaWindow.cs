@@ -96,6 +96,7 @@ namespace testmediasmall
             Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi"); 
 
 
+
             System.Threading.Thread.Sleep(2000);
             Video.SetResolution(360, 240);   //reduce resolution so that each frame is taken into the repository
             CalibrationVideo.SetResolution(360, 240);
@@ -297,7 +298,6 @@ namespace testmediasmall
                                           EyeTracker.EyeRightSmooth.GazePositionScreenNorm.Y, 0.0);
             dpoint = (lnorm + rnorm) * 0.5;
             dpoint.Y = (1.0 - dpoint.Y) * ry;
-
             dpoint.X = dpoint.X * rx;
             dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
 
@@ -442,7 +442,7 @@ namespace testmediasmall
             }
         }
 
-        public void OnFrameUpdate()  //executed 20 times per second.
+        public void OnFrameUpdate()  //executed 20d times per second.
         {
             GL.ClearColor(0.0f, 0.6f, 0.6f, 1.0f);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);

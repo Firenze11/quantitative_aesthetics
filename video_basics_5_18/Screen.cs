@@ -18,7 +18,7 @@ namespace testmediasmall
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
 
-        public enum Mode { zoom, sequence, motion, pan, colorZoom}
+        public enum Mode { zoom, sequence, motion, pan, color}
         public Mode mode = Mode.zoom;
 
         static double _rx = MediaWindow.rx;
@@ -69,6 +69,8 @@ namespace testmediasmall
         static int zoomduration = 60;
         static double zoomrate = 0.01;
 
+        //color control
+        public bool iscolor = false;
         public int threshold = 0;
 
         //fade control
@@ -353,9 +355,13 @@ namespace testmediasmall
             }
         }
 
-        //void DoNormal() { 
-            
-        //}
+        void DoColor() {
+            if (deviation > 0 && deviation < 40)    //in the beginning deviation = 0 so must have deviation > very small number
+            {
+                iscolor = true;
+            }
+        }
+
         static double ColorDist(byte[] px, RGBA_Quad quad)
         {
             return Math.Sqrt((quad.R - px[2]) * (quad.R - px[2])
@@ -431,7 +437,8 @@ namespace testmediasmall
             if (!ison) { return; }
             framecount++;
             cframeSmooth += 1.0;
-            cframe = (int) cframeSmooth;
+            cframe = (int) cframeSmooth; 
+
             if (iszooming)
             {
                 pframe++;
@@ -463,6 +470,8 @@ namespace testmediasmall
             if (mode == Mode.motion) DoMotion();
             if (mode == Mode.sequence) DoSequence();
             if (mode == Mode.pan) DoPan();
+            if (mode == Mode.color) DoColor();
+
             FrameUpdate();
 
             //////////////////////////////////////////////////////////////////////////////////try other things too
@@ -489,7 +498,7 @@ namespace testmediasmall
             {
                 //byte[, ,] px = MediaWindow.Vframe_repository[cframe].pix_data;
                 byte[, ,] px;
-                if (deviation > 0 && deviation < 40)    //in the beginning deviation = 0 so must have deviation > very small number
+                if (iscolor)    //in the beginning deviation = 0 so must have deviation > very small number
                 {
                     //draw the color change 
                     px = RecreateColor(MediaWindow.Vframe_repository[cframe], threshold, false);
@@ -498,11 +507,11 @@ namespace testmediasmall
                         threshold += 10;
                     }
                     //Colormap domiHueList = MediaWindow.Vframe_repository[cframe].DiffColorMap;
-                    
+
                     //limitedPalette;
 
                 }
-                else {px = MediaWindow.Vframe_repository[cframe].pix_data; }
+                else { px = MediaWindow.Vframe_repository[cframe].pix_data; }
                 vbit.FromFrame(px);
                 vbit.Update();
                 //vbit.Draw(x0, y0, wd, ht, 1.0);
@@ -529,7 +538,7 @@ namespace testmediasmall
             }
 
             //else if (normal) { 
-                
+
             //}
 
             if (iszooming || ispanning)
@@ -557,7 +566,7 @@ namespace testmediasmall
                     else
                     {
                         _tx0 = (1.0 - tx1) * s + tx0;
-                        _tx1 = s + (1.0 - s) * tx1; 
+                        _tx1 = s + (1.0 - s) * tx1;
                     }
                     _ty0 = ty0;
                     _ty1 = ty1;

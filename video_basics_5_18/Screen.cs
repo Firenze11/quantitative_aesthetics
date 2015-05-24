@@ -317,7 +317,7 @@ namespace testmediasmall
             //    Console.WriteLine(id + " is sequencing, cframe = " + cframe + ", " + next(id) + " cframe = " + (cframe - sequenceInterval));
             //}
             if (id != 1) { return; }
-            double x = MediaWindow.VfRepo[cframe].mDirSmth.X;
+            double x = MediaWindow.Vframe_repository[cframe].mDirSmth.X;
             double sequenceRate = 0.6;
             if (x >= 0.5)
             {
@@ -348,12 +348,12 @@ namespace testmediasmall
             {
                 pframe++;
             }
-            if (cframe >= MediaWindow.VfRepo.Count)
+            if (cframe >= MediaWindow.Vframe_repository.Count)
             {
                 cframe = 0;
                 cframeSmooth = 0.0;
             }
-            if (pframe >= MediaWindow.VfRepo.Count)
+            if (pframe >= MediaWindow.Vframe_repository.Count)
             {
                 pframe = 0;
             }
@@ -392,14 +392,14 @@ namespace testmediasmall
                 //{
                 for (int i = motioncount; i < 1; i += motionInterval)
                 {
-                    vbit.FromFrame(MediaWindow.VfRepo[cframe - i].pix_data);
+                    vbit.FromFrame(MediaWindow.Vframe_repository[cframe - i].pix_data);
                     vbit.Draw(left, bottom, w, h, a);
                 }
             }
 
             else if (!iszooming || (iszooming && isfading))
             {
-                byte[, ,] px = MediaWindow.VfRepo[cframe].pix_data;
+                byte[, ,] px = MediaWindow.Vframe_repository[cframe].pix_data;
                 vbit.FromFrame(px);
                 vbit.Update();
                 //vbit.Draw(x0, y0, wd, ht, 1.0);
@@ -436,7 +436,7 @@ namespace testmediasmall
                     _ty0 = ((s - 1.0) * projF.Y / _ry + ty0) / s;
                     _ty1 = ((s - 1.0) * projF.Y / _ry + ty1) / s;
 
-                    byte[, ,] pre_px = MediaWindow.VfRepo[pframe].pix_data;
+                    byte[, ,] pre_px = MediaWindow.Vframe_repository[pframe].pix_data;
                     vbit.FromFrame(pre_px);
                 }
                 else
@@ -455,7 +455,7 @@ namespace testmediasmall
                     _ty0 = ty0;
                     _ty1 = ty1;
 
-                    byte[, ,] pre_px = MediaWindow.VfRepo[cframe].pix_data;
+                    byte[, ,] pre_px = MediaWindow.Vframe_repository[cframe].pix_data;
                     vbit.FromFrame(pre_px);
                 }
                 vbit.Update();

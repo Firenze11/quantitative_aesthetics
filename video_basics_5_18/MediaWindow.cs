@@ -58,7 +58,7 @@ namespace testmediasmall
         public static int screenCount = 3;
 
         //data
-        public static List<VFrame> VfRepo = new List<VFrame>();
+        public static List<VFrame> Vframe_repository = new List<VFrame>();
         public static List<Screen> Screens = new List<Screen>();
 
         //infrastructure
@@ -126,14 +126,14 @@ namespace testmediasmall
             double minDomiHue = 10;
             double domiHueDiff;
 
-            for (int i = 0; i < VfRepo.Count; i++)
+            for (int i = 0; i < Vframe_repository.Count; i++)
             {
                 if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
                 {
                     //complementary
                     if (complementary)
                     {
-                        domiHueDiff = Math.Abs((VfRepo[analyzedFrame].domiHue + 0.5) - VfRepo[i].domiHue);
+                        domiHueDiff = Math.Abs((Vframe_repository[analyzedFrame].domiHue + 0.5) - Vframe_repository[i].domiHue);
                         if (domiHueDiff < minDomiHue)
                         {
                             minDomiHue = domiHueDiff;
@@ -142,7 +142,7 @@ namespace testmediasmall
                     }
                     else //pick the similar dominant color
                     {
-                        domiHueDiff = Math.Abs(VfRepo[analyzedFrame].domiHue - VfRepo[i].domiHue);
+                        domiHueDiff = Math.Abs(Vframe_repository[analyzedFrame].domiHue - Vframe_repository[i].domiHue);
                         if (domiHueDiff < minDomiHue)
                         {
                             minDomiHue = domiHueDiff;
@@ -164,11 +164,11 @@ namespace testmediasmall
             byte colorQuality = gazeRGB.Max();
             int colorQualityIndex = gazeRGB.ToList().IndexOf(colorQuality); //pick between redness, greenness, blueness for the gaze
 
-            for (int i = 0; i < VfRepo.Count; i++)
+            for (int i = 0; i < Vframe_repository.Count; i++)
             {
                 if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
                 {
-                    float frameColorQuality = VfRepo[i].maskAvgRGBColor[gazeMaskNum][colorQualityIndex];   //get colorQuality (red, blue, greenness) value in mask number matching the gaze
+                    float frameColorQuality = Vframe_repository[i].maskAvgRGBColor[gazeMaskNum][colorQualityIndex];   //get colorQuality (red, blue, greenness) value in mask number matching the gaze
                     float colorQualityDiff = Math.Abs(colorQuality - frameColorQuality);
 
                     if (complementary) //pick the frame with the least of the qualifier (redness, greenness, blueness)
@@ -435,10 +435,10 @@ namespace testmediasmall
             vf.motionDir = CV.motionDir;
             vf.mDirSmth = CV.motionDir;
 
-            VfRepo.Add(vf);
-            if (VfRepo.Count > 2)
+            Vframe_repository.Add(vf);
+            if (Vframe_repository.Count > 2)
             {
-                VfRepo[VfRepo.Count - 2].mDirSmth = (VfRepo[VfRepo.Count - 3].motionDir + VfRepo[VfRepo.Count - 3].motionDir) * 0.5;
+                Vframe_repository[Vframe_repository.Count - 2].mDirSmth = (Vframe_repository[Vframe_repository.Count - 3].motionDir + Vframe_repository[Vframe_repository.Count - 3].motionDir) * 0.5;
             }
         }
 
@@ -458,18 +458,18 @@ namespace testmediasmall
                 rx = Video.ResX;
                 ry = Video.ResY;
 
-                if (VfRepo.Count <= maxframes) 
+                if (Vframe_repository.Count <= maxframes) 
                 {
                     BuildVfRepo();
-                    if (VfRepo.Count > 1)
+                    if (Vframe_repository.Count > 1)
                     {
-                        if (VfRepo[VfRepo.Count - 1].pix_data == VfRepo[VfRepo.Count - 2].pix_data)
+                        if (Vframe_repository[Vframe_repository.Count - 1].pix_data == Vframe_repository[Vframe_repository.Count - 2].pix_data)
                             Console.WriteLine("vf repeated");
                     }
                 }
             }
 
-            if (VfRepo.Count >= minframes && !playbackmode)
+            if (Vframe_repository.Count >= minframes && !playbackmode)
             {
                 CalibrationVideo.Stop();
 				playbackmode = true;
@@ -479,7 +479,7 @@ namespace testmediasmall
                 {
                     Screens[i].ison = true;
                 }
-                Console.WriteLine("playing back, VFR.C = " + VfRepo.Count);
+                Console.WriteLine("playing back, VFR.C = " + Vframe_repository.Count);
             }
             if (playbackmode)
 			{

@@ -36,6 +36,8 @@ namespace testmediasmall
         public Vector2d motionCentroid = new Vector2d();
         public double[] motionMaskSum = new double[5];
         public Vector2d[] motionMaskDir = new Vector2d [5];
+        public Vector2d motionDir;
+        public Vector2d mDirSmth;
     }
 
     public class MediaWindow
@@ -55,7 +57,6 @@ namespace testmediasmall
         static int minframes = 40;
 
         static int skippedFrameRange = 10;
-        static bool blackout = true;
         public static int screenCount = 3;
 
         //data
@@ -87,15 +88,15 @@ namespace testmediasmall
             {
                 Console.WriteLine(e);
             }
-            //intialize Video capturing from primary camera [0] at a low resolution
             VideoIN.EnumCaptureDevices();
-
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
-            CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
-            //CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi"); 
-            Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
+            //CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
+            CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi"); 
+            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
             //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
-           //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
+            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
+            Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi"); 
+
 
 
             System.Threading.Thread.Sleep(2000);
@@ -117,7 +118,6 @@ namespace testmediasmall
             //return a.avgb.CompareTo(b.avgb);
             //return a.totalMovement.CompareTo(b.totalMovement);
             return a.domiHue.CompareTo(b.domiHue);
-
             //double aa = a.domiHue + a.totalMovement*0.1;
             //double bb = b.domiHue + b.totalMovement*0.1;
             //return aa.CompareTo(bb);
@@ -293,9 +293,8 @@ namespace testmediasmall
                                           EyeTracker.EyeRightSmooth.GazePositionScreenNorm.Y, 0.0);
             dpoint = (lnorm + rnorm) * 0.5;
             dpoint.Y = (1.0 - dpoint.Y) * ry;
-
             dpoint.X = dpoint.X * rx;
-            //dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
+            dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
 
         }
 
@@ -359,11 +358,10 @@ namespace testmediasmall
             Videoimage.Draw(0.0, 0.0, rx, ry, 1.0);
         }
 
-        void BuildVfRepo() /// need modify
+        void BuildVfRepo() 
         {
             VideoPixel[,] px = Video.Pixels;
             VFrame vf = new VFrame();
-            frameNumber++;
             CV.FrameUpdate(px, rx, ry);   
 
             //////////////////////////////////////////////////////////////////////////////color palette code
@@ -429,8 +427,14 @@ namespace testmediasmall
             vf.motionCentroid = CV.motionCentroid;
             vf.motionMaskSum = CV.motionMaskSum;
             vf.motionMaskDir = CV.motionMaskDir;
+            vf.motionDir = CV.motionDir;
+            vf.mDirSmth = CV.motionDir;
 
             Vframe_repository.Add(vf);
+            if (Vframe_repository.Count > 2)
+            {
+                Vframe_repository[Vframe_repository.Count - 2].mDirSmth = (Vframe_repository[Vframe_repository.Count - 3].motionDir + Vframe_repository[Vframe_repository.Count - 3].motionDir) * 0.5;
+            }
         }
 
         public void OnFrameUpdate()  //executed 20d times per second.
@@ -442,6 +446,7 @@ namespace testmediasmall
             GL.Ortho(0.0, rx, 0.0, ry, -1.0, 1.0);
 
             if (!Video.IsVideoCapturing) return; //make sure that there is a camera connected and running
+            frameNumber++;
             if (Video.NeedUpdate)
             {
                 Video.UpdateFrame(true); //recalculate the video frame if the camera got a new one

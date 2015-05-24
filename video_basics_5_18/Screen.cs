@@ -17,8 +17,10 @@ namespace testmediasmall
         public int id;
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
+
         public enum Mode { zoom, sequence, motion, pan, colorZoom}
         public Mode mode = Mode.zoom;
+
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
 
@@ -37,8 +39,9 @@ namespace testmediasmall
         public int num;  //get mask number of the gaze
 
         //frame control
-        int cframe = 0;    //current frame
+        public int cframe = 0;    //current frame
         int pframe = 0;  //frame number of previous clip during transition
+        public double cframeSmooth = 0.0;
         int newFrame = 0;
 
         //on/off control
@@ -193,7 +196,6 @@ namespace testmediasmall
                 }
             }
             //gaze optical flow////NOT FINISHED
-            
         }
 
         private void DoZoom()
@@ -218,6 +220,7 @@ namespace testmediasmall
                     MediaWindow.Screens[next(id)].ison = true;
                     //pframe = cframe;
                     cframe = newFrame;
+                    cframeSmooth = newFrame;
                     Console.WriteLine(id + " is fading, pf = " + pframe +", cf = " + cframe);
 
                     fadecount = 0;
@@ -241,18 +244,13 @@ namespace testmediasmall
                 zoomcount = 0;
                 pframe = cframe; ///Frame reassignments
 
-                Console.WriteLine(id + " is zooming, cf = " + cframe);
+                Console.WriteLine(id + " is zooming, cf = "+cframe);
 
                 //choose which scene to show (just remember it for now, show it later)
-                //newFrame[other(sn)] = maskAvgRGBTransition(cframe[sn], num, gazeColor);
-                newFrame = MediaWindow.domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue  
-                //MediaWindow.Screens[MediaWindow.other(id)].newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, true);// CHOOSE BETWEEN!!!!!!!!!!!!!!!!!!!!!!!!!!!/////////////////////////////Aiko
-                //MediaWindow.Screens[MediaWindow.other(id)].newFrame = maskOpticalFlowTransition(cframe, num, gazeOptFlow, gazeOptFlowVector, true);//add px optical flow later!!//////////////////////////
+                newFrame = MediaWindow.domiHueTransition(cframe, true); 
             }
-            else////////////////////////////////////////////////////////////////Aiko
-            { //write here the code that is executed during normal viewing
-                //frameCountForNoTransition += slowPlaybackRate;
-                //framecount = (int)Math.Floor(frameCountForNoTransition);
+            else
+            {
             }
         }
         void DoPan()
@@ -287,7 +285,6 @@ namespace testmediasmall
                     ispanning = true;
                     pandir = 1;
                     pancount = 0;
-                    //MediaWindow.Screens[prev(id)].cframe = cframe;
                     Console.WriteLine(id + " is panning, cframe = " + cframe + " pandir = " + pandir);
                 }
             }
@@ -305,12 +302,8 @@ namespace testmediasmall
             }
             else if (cframe > motionStartF) //any condition that triggers motion mode, maybe gaze optical flow....
             {
-                //projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
-
-                //MediaWindow.Screens[MediaWindow.other(id)].ison = true;
                 ismotion = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
                 motioncount = 0;
-                //MediaWindow.Screens[MediaWindow.other(id)].SetPframe(cframe); ///Frame reassignments
             }
             else
             {
@@ -318,31 +311,45 @@ namespace testmediasmall
         }
         void DoSequence()
         {
-            if (issequencing) //post fixation period lasts for zoomduration frames
+            //if (issequencing) //post fixation period lasts for zoomduration frames
+            //{
+            //    if (sequencecount > sequenceduration)
+            //    {
+            //        issequencing = false;
+            //        Console.WriteLine(id + " stops sequencing");
+            //        return;
+            //    }
+            //    sequencecount++;
+            //}
+            //else if (cframe > sequenceStartF) //any condition that triggers motion mode, maybe gaze optical flow....
+            //{
+            //    issequencing = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
+            //    sequencecount = 0;
+            //    MediaWindow.Screens[next(id)].ison = true;
+            //    MediaWindow.Screens[next(id)].issequencing = true;
+            //    MediaWindow.Screens[next(id)].sequencecount = 0;
+            //    MediaWindow.Screens[next(id)].cframe = cframe - sequenceInterval;
+            //    Console.WriteLine(id + " is sequencing, cframe = " + cframe + ", " + next(id) + " cframe = " + (cframe - sequenceInterval));
+            //}
+            if (id != 1) { return; }
+            double x = MediaWindow.Vframe_repository[cframe].mDirSmth.X;
+            double sequenceRate = 0.6;
+            if (x >= 0.5)
             {
-                if (sequencecount > sequenceduration)
-                {
-                    issequencing = false;
-                    Console.WriteLine(id + " stops sequencing");
-                    return;
-                }
-                sequencecount++;
+                //MediaWindow.Screens[0].cframeSmooth -= 2.0 * sequenceRate * x;
+                //cframeSmooth -= sequenceRate * x;
+                MediaWindow.Screens[0].cframeSmooth -= 1.0;
+                cframeSmooth -= 0.5;
             }
-            else if (cframe > sequenceStartF) //any condition that triggers motion mode, maybe gaze optical flow....
+            else if (x <= -0.5)
             {
-                //projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
-
-                //MediaWindow.Screens[MediaWindow.other(id)].ison = true;
-                issequencing = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
-                sequencecount = 0;
-                MediaWindow.Screens[next(id)].ison = true;
-                MediaWindow.Screens[next(id)].issequencing = true;
-                MediaWindow.Screens[next(id)].sequencecount = 0;
-                MediaWindow.Screens[next(id)].cframe = cframe - sequenceInterval;
-                Console.WriteLine(id + " is sequencing, cframe = " + cframe + ", " + next(id) + " cframe = " + (cframe - sequenceInterval));
+                MediaWindow.Screens[0].cframeSmooth += 1.0;
+                cframeSmooth += 0.5;
             }
             else
             {
+                MediaWindow.Screens[0].cframeSmooth = cframe;
+                MediaWindow.Screens[2].cframeSmooth = cframe;
             }
         }
 
@@ -423,7 +430,8 @@ namespace testmediasmall
         {
             if (!ison) { return; }
             framecount++;
-            cframe++;
+            cframeSmooth += 1.0;
+            cframe = (int) cframeSmooth;
             if (iszooming)
             {
                 pframe++;
@@ -431,6 +439,7 @@ namespace testmediasmall
             if (cframe >= MediaWindow.Vframe_repository.Count)
             {
                 cframe = 0;
+                cframeSmooth = 0.0;
             }
             if (pframe >= MediaWindow.Vframe_repository.Count)
             {
@@ -448,14 +457,14 @@ namespace testmediasmall
         {
             // if (!ison) { return; }
             // if (oncount > onduration) { ison = false; return; }
-            FrameUpdate();
             bool islookedat = IsLookedAt(gazeInput);
             if (islookedat) {CalculateGazeProperty(gazeInput);}
             if (mode == Mode.zoom) DoZoom();
             if (mode == Mode.motion) DoMotion();
             if (mode == Mode.sequence) DoSequence();
             if (mode == Mode.pan) DoPan();
-            //if (mode == Mode.normal) DoNormal();
+            FrameUpdate();
+
             //////////////////////////////////////////////////////////////////////////////////try other things too
         }
 

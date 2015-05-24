@@ -17,8 +17,8 @@ namespace testmediasmall
         public int id;
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
-        public enum Mode { zoom, sequence, motion, pan}
-        public Mode mode = Mode.zoom;
+        public enum Mode { zoom, sequence, motion, pan, normal}
+        public Mode mode = Mode.sequence;
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
 
@@ -37,8 +37,9 @@ namespace testmediasmall
         public int num;  //get mask number of the gaze
 
         //frame control
-        int cframe = 0;    //current frame
+        public int cframe = 0;    //current frame
         int pframe = 0;  //frame number of previous clip during transition
+        public double cframeSmooth = 0.0;
         int newFrame = 0;
 
         //on/off control
@@ -190,7 +191,6 @@ namespace testmediasmall
                 }
             }
             //gaze optical flow////NOT FINISHED
-            
         }
 
         private void DoZoom()
@@ -214,6 +214,7 @@ namespace testmediasmall
                     MediaWindow.Screens[next(id)].ison = true;
                     //pframe = cframe;
                     cframe = newFrame;
+                    cframeSmooth = newFrame;
                     Console.WriteLine(id + " is fading, pf = " + pframe +", cf = " + cframe);
 
                     fadecount = 0;
@@ -229,19 +230,12 @@ namespace testmediasmall
                 iszooming = true;
                 zoomcount = 0;
                 pframe = cframe; ///Frame reassignments
-
                 Console.WriteLine(id + " is zooming, cf = "+cframe);
-
                 //choose which scene to show (just remember it for now, show it later)
-                //newFrame[other(sn)] = maskAvgRGBTransition(cframe[sn], num, gazeColor);
-                newFrame = MediaWindow.domiHueTransition(cframe, true);  //while in zooming identify the next frame to show: from the repository pick the one with same domihue  
-                //MediaWindow.Screens[MediaWindow.other(id)].newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, true);// CHOOSE BETWEEN!!!!!!!!!!!!!!!!!!!!!!!!!!!/////////////////////////////Aiko
-                //MediaWindow.Screens[MediaWindow.other(id)].newFrame = maskOpticalFlowTransition(cframe, num, gazeOptFlow, gazeOptFlowVector, true);//add px optical flow later!!//////////////////////////
+                newFrame = MediaWindow.domiHueTransition(cframe, true); 
             }
-            else////////////////////////////////////////////////////////////////Aiko
-            { //write here the code that is executed during normal viewing
-                //frameCountForNoTransition += slowPlaybackRate;
-                //framecount = (int)Math.Floor(frameCountForNoTransition);
+            else
+            {
             }
         }
         void DoPan()
@@ -276,7 +270,6 @@ namespace testmediasmall
                     ispanning = true;
                     pandir = 1;
                     pancount = 0;
-                    //MediaWindow.Screens[prev(id)].cframe = cframe;
                     Console.WriteLine(id + " is panning, cframe = " + cframe + " pandir = " + pandir);
                 }
             }
@@ -294,12 +287,8 @@ namespace testmediasmall
             }
             else if (cframe > motionStartF) //any condition that triggers motion mode, maybe gaze optical flow....
             {
-                //projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
-
-                //MediaWindow.Screens[MediaWindow.other(id)].ison = true;
                 ismotion = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
                 motioncount = 0;
-                //MediaWindow.Screens[MediaWindow.other(id)].SetPframe(cframe); ///Frame reassignments
             }
             else
             {
@@ -307,31 +296,45 @@ namespace testmediasmall
         }
         void DoSequence()
         {
-            if (issequencing) //post fixation period lasts for zoomduration frames
+            //if (issequencing) //post fixation period lasts for zoomduration frames
+            //{
+            //    if (sequencecount > sequenceduration)
+            //    {
+            //        issequencing = false;
+            //        Console.WriteLine(id + " stops sequencing");
+            //        return;
+            //    }
+            //    sequencecount++;
+            //}
+            //else if (cframe > sequenceStartF) //any condition that triggers motion mode, maybe gaze optical flow....
+            //{
+            //    issequencing = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
+            //    sequencecount = 0;
+            //    MediaWindow.Screens[next(id)].ison = true;
+            //    MediaWindow.Screens[next(id)].issequencing = true;
+            //    MediaWindow.Screens[next(id)].sequencecount = 0;
+            //    MediaWindow.Screens[next(id)].cframe = cframe - sequenceInterval;
+            //    Console.WriteLine(id + " is sequencing, cframe = " + cframe + ", " + next(id) + " cframe = " + (cframe - sequenceInterval));
+            //}
+            if (id != 1) { return; }
+            double x = MediaWindow.VfRepo[cframe].mDirSmth.X;
+            double sequenceRate = 0.6;
+            if (x >= 0.5)
             {
-                if (sequencecount > sequenceduration)
-                {
-                    issequencing = false;
-                    Console.WriteLine(id + " stops sequencing");
-                    return;
-                }
-                sequencecount++;
+                //MediaWindow.Screens[0].cframeSmooth -= 2.0 * sequenceRate * x;
+                //cframeSmooth -= sequenceRate * x;
+                MediaWindow.Screens[0].cframeSmooth -= 1.0;
+                cframeSmooth -= 0.5;
             }
-            else if (cframe > sequenceStartF) //any condition that triggers motion mode, maybe gaze optical flow....
+            else if (x <= -0.5)
             {
-                //projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
-
-                //MediaWindow.Screens[MediaWindow.other(id)].ison = true;
-                issequencing = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
-                sequencecount = 0;
-                MediaWindow.Screens[next(id)].ison = true;
-                MediaWindow.Screens[next(id)].issequencing = true;
-                MediaWindow.Screens[next(id)].sequencecount = 0;
-                MediaWindow.Screens[next(id)].cframe = cframe - sequenceInterval;
-                Console.WriteLine(id + " is sequencing, cframe = " + cframe + ", " + next(id) + " cframe = " + (cframe - sequenceInterval));
+                MediaWindow.Screens[0].cframeSmooth += 1.0;
+                cframeSmooth += 0.5;
             }
             else
             {
+                MediaWindow.Screens[0].cframeSmooth = cframe;
+                MediaWindow.Screens[2].cframeSmooth = cframe;
             }
         }
 
@@ -339,16 +342,18 @@ namespace testmediasmall
         {
             if (!ison) { return; }
             framecount++;
-            cframe++;
+            cframeSmooth += 1.0;
+            cframe = (int) cframeSmooth;
             if (iszooming)
             {
                 pframe++;
             }
-            if (cframe >= MediaWindow.Vframe_repository.Count)
+            if (cframe >= MediaWindow.VfRepo.Count)
             {
                 cframe = 0;
+                cframeSmooth = 0.0;
             }
-            if (pframe >= MediaWindow.Vframe_repository.Count)
+            if (pframe >= MediaWindow.VfRepo.Count)
             {
                 pframe = 0;
             }
@@ -356,6 +361,7 @@ namespace testmediasmall
             {
                 MediaWindow.Screens[id - 1].ison = true;
                 MediaWindow.Screens[id - 1].cframe = 0;
+                MediaWindow.Screens[id - 1].cframeSmooth = 0.0;
                 Console.WriteLine((id - 1) + " is on, cf = " + MediaWindow.Screens[id - 1].cframe);
             }
         }
@@ -364,16 +370,13 @@ namespace testmediasmall
         {
             // if (!ison) { return; }
             // if (oncount > onduration) { ison = false; return; }
-            FrameUpdate();
             bool islookedat = IsLookedAt(gazeInput);
-            if (islookedat)
-            {
-                CalculateGazeProperty(gazeInput);
-            }
+            if (islookedat) {CalculateGazeProperty(gazeInput);}
             if (mode == Mode.zoom) DoZoom();
             if (mode == Mode.motion) DoMotion();
             if (mode == Mode.sequence) DoSequence();
             if (mode == Mode.pan) DoPan();
+            FrameUpdate();
             //////////////////////////////////////////////////////////////////////////////////try other things too
         }
 
@@ -389,14 +392,14 @@ namespace testmediasmall
                 //{
                 for (int i = motioncount; i < 1; i += motionInterval)
                 {
-                    vbit.FromFrame(MediaWindow.Vframe_repository[cframe - i].recreate_pix_data);
+                    vbit.FromFrame(MediaWindow.VfRepo[cframe - i].pix_data);
                     vbit.Draw(left, bottom, w, h, a);
                 }
             }
 
             else if (!iszooming || (iszooming && isfading))
             {
-                byte[, ,] px = MediaWindow.Vframe_repository[cframe].recreate_pix_data;
+                byte[, ,] px = MediaWindow.VfRepo[cframe].pix_data;
                 vbit.FromFrame(px);
                 vbit.Update();
                 //vbit.Draw(x0, y0, wd, ht, 1.0);
@@ -433,7 +436,7 @@ namespace testmediasmall
                     _ty0 = ((s - 1.0) * projF.Y / _ry + ty0) / s;
                     _ty1 = ((s - 1.0) * projF.Y / _ry + ty1) / s;
 
-                    byte[, ,] pre_px = MediaWindow.Vframe_repository[pframe].recreate_pix_data;
+                    byte[, ,] pre_px = MediaWindow.VfRepo[pframe].pix_data;
                     vbit.FromFrame(pre_px);
                 }
                 else
@@ -452,7 +455,7 @@ namespace testmediasmall
                     _ty0 = ty0;
                     _ty1 = ty1;
 
-                    byte[, ,] pre_px = MediaWindow.Vframe_repository[cframe].recreate_pix_data;
+                    byte[, ,] pre_px = MediaWindow.VfRepo[cframe].pix_data;
                     vbit.FromFrame(pre_px);
                 }
                 vbit.Update();

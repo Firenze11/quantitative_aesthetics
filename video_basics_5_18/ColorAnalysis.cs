@@ -53,6 +53,7 @@ namespace testmediasmall
         public Vector2d motionCentroid;
         public double[] motionMaskSum;
         public Vector2d[] motionMaskDir;
+        public Vector2d motionDir;
         double motionSum;
 
         //mask average rgb
@@ -68,7 +69,6 @@ namespace testmediasmall
         void CreateMasks(int _rx, int _ry)
         {
             List<byte[, ,]> maskData = new List<byte[, ,]>();
-            //........................................................mask to split screen areas
             for (int k = 0; k < maskNum; ++k)
             {
                 byte[, ,] mdat = new byte[_ry, _rx, 1];
@@ -126,10 +126,11 @@ namespace testmediasmall
                 imgdataBGR = new byte[_ry, _rx, 3];
             }
             
-            motionSum = 0;
+            motionSum = 0.0;
             motionCentroid = new Vector2d();
             motionMaskSum = new double[5];
             motionMaskDir = new Vector2d[5];
+            motionDir = new Vector2d();
             mask_pix_n = new int[5];
 
             //scan each pixel for rgb
@@ -153,7 +154,7 @@ namespace testmediasmall
                     Vector2d px_motion_dir = new Vector2d(_px[j, i].mx, _px[j, i].my);
                     motionSum += px_motion;
                     motionCentroid += (new Vector2d(i, j)) * px_motion;
-                    //motionMaskSum[maskn] += px_motion;
+                    motionDir += px_motion_dir;
                     motionMaskDir[maskn] += px_motion_dir;
                     mask_pix_n[maskn]++;
                     
@@ -164,6 +165,7 @@ namespace testmediasmall
                 }
             }
             motionCentroid /= motionSum;
+            motionDir /= motionSum;
             for (int i = 0; i < 5; i++)
             {
                 motionMaskDir[i] /= ((double)mask_pix_n[i]/1000.0);
@@ -397,9 +399,7 @@ namespace testmediasmall
 
             CalculateHisto();
             CalculateMotion();
-
         }
-
     }
 
 

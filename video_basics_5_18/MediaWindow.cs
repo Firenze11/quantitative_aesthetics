@@ -26,7 +26,9 @@ namespace testmediasmall
         public double avgb = 0.0;
         public List<float[]> maskAvgRGBColor;
         public double totalMovement = 0.0;
-        public double domiHue = 0.0; //dominant Hue
+        public double domiHue = 0.0;
+        public Colormap initialCMap; 
+        public Colormap DiffColorMap; 
         public RGBHisto HistoR;
         public RGBHisto HistoG;
         public RGBHisto HistoB;
@@ -283,13 +285,6 @@ namespace testmediasmall
             return n;
         }
 
-        static double ColorDist(byte[] px, RGBA_Quad quad)
-        {
-            return Math.Sqrt((quad.R - px[2]) * (quad.R - px[2])
-                             + (quad.G - px[1]) * (quad.G - px[1])
-                             + (quad.B - px[0]) * (quad.B - px[0]));
-        }
-
         void CalculateGaze()
         {
             Vector3d lnorm = new Vector3d(EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.X,
@@ -373,19 +368,19 @@ namespace testmediasmall
 
             //////////////////////////////////////////////////////////////////////////////color palette code
             ColorQuant ColorQuantizer = new ColorQuant();
-            Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(Video, 25);
+            vf.initialCMap = ColorQuantizer.MedianCutQuantGeneral(Video, 16);
             //Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 16);    //sort by frequency
-            Colormap DiffColorMap = ColorQuantizer.SortByDifference(initialCMap);   //sort intialCMap again by the different; distinct color
+            vf.DiffColorMap = ColorQuantizer.SortByDifference(vf.initialCMap);   //sort intialCMap again by the different; distinct color
             //Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);   //sort intialCMap by hue
-            var a = ColorQuantizer.TranslateHSV(DiffColorMap[0]);
+            var a = ColorQuantizer.TranslateHSV(vf.DiffColorMap[0]);
             vf.domiHue = a[0];
             ////////////////////////////////////////////////////////////////////////end of color palette cod
 
-            double threshold = 5.0;
+            //double threshold = 5.0;
 
             int j2;
             vf.pix_data = new byte[ry, rx, 3];
-            vf.recreate_pix_data = new byte[ry, rx, 3];
+            //vf.recreate_pix_data = new byte[ry, rx, 3];
             for (int j = 0; j < ry; j++)
             {
                 j2 = ry - j - 1;
@@ -469,11 +464,11 @@ namespace testmediasmall
                 CalibrationVideo.Stop();
 				playbackmode = true;
                 CreateScreens();
-                Screens[2].ison = true;
-                //for (int i = 0; i < screenCount ; i++)
-                //{
-                //    Screens[i].ison = true;
-                //}
+                //Screens[2].ison = true;
+                for (int i = 0; i < screenCount; i++)
+                {
+                    Screens[i].ison = true;
+                }
                 Console.WriteLine("playing back, VFR.C = " + Vframe_repository.Count);
             }
             if (playbackmode)

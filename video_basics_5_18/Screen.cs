@@ -17,7 +17,7 @@ namespace testmediasmall
         public int id;
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
-        public enum Mode { zoom, sequence, motion, pan, normal}
+        public enum Mode { zoom, sequence, motion, pan, colorZoom}
         public Mode mode = Mode.zoom;
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
@@ -65,6 +65,8 @@ namespace testmediasmall
         int zoomcount = 0;
         static int zoomduration = 60;
         static double zoomrate = 0.01;
+
+        public int threshold = 0;
 
         //fade control
         public bool isfading = false;
@@ -168,6 +170,7 @@ namespace testmediasmall
                 projGM *= (1.0 / lastf_gazeMedium);
                 for (int i = 0; i < lastf_gazeMedium; i++) { deviation += (gazeL[gazeL.Count - i - 1] - projGM).LengthSquared; } //"standard dev"
                 deviation = Math.Sqrt(deviation);
+                Console.WriteLine("deviation: " + deviation);
             }
 
             if (gazeL.Count >1)
@@ -204,6 +207,7 @@ namespace testmediasmall
                     zoomcount = 0;
                     framecount = 0;
                     isfading = false;
+                    threshold = 0;
 
                     Console.WriteLine(id + " stops zooming, cf = " + cframe);
                     return;
@@ -221,16 +225,23 @@ namespace testmediasmall
                 zoomcount++;
                 if (isfading) { fadecount++; }
             }
-            else if (deviation < 20 && deviation > 0.00000000001 && framecount > transitionInterval ) //avoid zooming when there's no gaze data (dev = 0)
+            //else if (deviation < 100)
+            //{
+            //    //draw the color change 
+            //    byte[,,] limitedPalette = RecreateColor(MediaWindow.Vframe_repository[cframe], 5.0);
+            //    //limitedPalette;
+
+            //}
+            else if (deviation < 20 && deviation > 0.00000000001 && framecount > transitionInterval) //avoid zooming when there's no gaze data (dev = 0)
             {
                 projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
-
                 MediaWindow.Screens[next(id)].ison = true;
+
                 iszooming = true;
                 zoomcount = 0;
                 pframe = cframe; ///Frame reassignments
 
-                Console.WriteLine(id + " is zooming, cf = "+cframe);
+                Console.WriteLine(id + " is zooming, cf = " + cframe);
 
                 //choose which scene to show (just remember it for now, show it later)
                 //newFrame[other(sn)] = maskAvgRGBTransition(cframe[sn], num, gazeColor);
@@ -335,6 +346,79 @@ namespace testmediasmall
             }
         }
 
+        //void DoNormal() { 
+            
+        //}
+        static double ColorDist(byte[] px, RGBA_Quad quad)
+        {
+            return Math.Sqrt((quad.R - px[2]) * (quad.R - px[2])
+                             + (quad.G - px[1]) * (quad.G - px[1])
+                             + (quad.B - px[0]) * (quad.B - px[0]));
+        }
+
+        byte[, ,] RecreateColor(VFrame vf, double threshold, bool distinctColor)
+        {
+            byte[, ,] recreate_pix_data = new byte[MediaWindow.ry, MediaWindow.rx, 3];
+
+            for (int j = 0; j < MediaWindow.ry; j++)
+            {
+                for (int i = 0; i < MediaWindow.rx; i++)
+                {
+                    double min = 442.0;
+                    int minId = 0;
+                    if (distinctColor)
+                    {
+                        for (int k = 0; k < vf.DiffColorMap.Count; k++)
+                        {
+                            byte[] px_d = { vf.pix_data[j, i, 0], vf.pix_data[j, i, 1], vf.pix_data[j, i, 2] };
+                            double dist = ColorDist(px_d, vf.DiffColorMap[k]);
+                            if (dist < threshold)
+                            {
+                                minId = k;
+                                break;
+                            }
+                            else
+                            {
+                                if (dist < min)
+                                {
+                                    min = dist;
+                                    minId = k;
+                                }
+                            }
+                        }
+                        recreate_pix_data[j, i, 2] = vf.DiffColorMap[minId].R;
+                        recreate_pix_data[j, i, 1] = vf.DiffColorMap[minId].G;
+                        recreate_pix_data[j, i, 0] = vf.DiffColorMap[minId].B;
+                    }
+                    else
+                    {
+                        for (int k = 0; k < vf.initialCMap.Count; k++)
+                        {
+                            byte[] px_d = { vf.pix_data[j, i, 0], vf.pix_data[j, i, 1], vf.pix_data[j, i, 2] };
+                            double dist = ColorDist(px_d, vf.initialCMap[k]);
+                            if (dist < threshold)
+                            {
+                                minId = k;
+                                break;
+                            }
+                            else
+                            {
+                                if (dist < min)
+                                {
+                                    min = dist;
+                                    minId = k;
+                                }
+                            }
+                        }
+                        recreate_pix_data[j, i, 2] = vf.initialCMap[minId].R;
+                        recreate_pix_data[j, i, 1] = vf.initialCMap[minId].G;
+                        recreate_pix_data[j, i, 0] = vf.initialCMap[minId].B;
+                    }
+                }
+            }
+            return recreate_pix_data;
+        }
+
         private void FrameUpdate()
         {
             if (!ison) { return; }
@@ -352,12 +436,12 @@ namespace testmediasmall
             {
                 pframe = 0;
             }
-            if (id > 0 && cframe >= 10 && MediaWindow.Screens[id - 1].ison == false)
-            {
-                MediaWindow.Screens[id - 1].ison = true;
-                MediaWindow.Screens[id - 1].cframe = 0;
-                Console.WriteLine((id - 1) + " is on, cf = " + MediaWindow.Screens[id - 1].cframe);
-            }
+            //if (id > 0 && cframe >= 10 && MediaWindow.Screens[id - 1].ison == false)
+            //{
+            //    MediaWindow.Screens[id - 1].ison = true;
+            //    MediaWindow.Screens[id - 1].cframe = 0;
+            //    Console.WriteLine((id - 1) + " is on, cf = " + MediaWindow.Screens[id - 1].cframe);
+            //}
         }
 
         public void OnTimeLapse(Vector3d gazeInput)
@@ -371,6 +455,7 @@ namespace testmediasmall
             if (mode == Mode.motion) DoMotion();
             if (mode == Mode.sequence) DoSequence();
             if (mode == Mode.pan) DoPan();
+            //if (mode == Mode.normal) DoNormal();
             //////////////////////////////////////////////////////////////////////////////////try other things too
         }
 
@@ -393,7 +478,22 @@ namespace testmediasmall
 
             else if (!iszooming || (iszooming && isfading))
             {
-                byte[, ,] px = MediaWindow.Vframe_repository[cframe].pix_data;
+                //byte[, ,] px = MediaWindow.Vframe_repository[cframe].pix_data;
+                byte[, ,] px;
+                if (deviation > 0 && deviation < 40)    //in the beginning deviation = 0 so must have deviation > very small number
+                {
+                    //draw the color change 
+                    px = RecreateColor(MediaWindow.Vframe_repository[cframe], threshold, false);
+                    if (threshold <= 150)
+                    {
+                        threshold += 10;
+                    }
+                    //Colormap domiHueList = MediaWindow.Vframe_repository[cframe].DiffColorMap;
+                    
+                    //limitedPalette;
+
+                }
+                else {px = MediaWindow.Vframe_repository[cframe].pix_data; }
                 vbit.FromFrame(px);
                 vbit.Update();
                 //vbit.Draw(x0, y0, wd, ht, 1.0);
@@ -418,6 +518,10 @@ namespace testmediasmall
                 GL.End();
                 GL.Disable(EnableCap.Texture2D);
             }
+
+            //else if (normal) { 
+                
+            //}
 
             if (iszooming || ispanning)
             {

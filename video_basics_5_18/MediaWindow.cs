@@ -314,19 +314,18 @@ namespace testmediasmall
             {
                 for (int i = 0; i < screenCount; i++)
                 {
-                    double l = (double)i * (double)rx / (double)screenCount;
+                    //double l = (double)i * (double)rx / (double)screenCount;
+                    double l = 0.0;
                     double b = 0.0;//0.5 * (double)ry * (1.0 - (1.0 / (double)screenCount));
-                    double w = (double)rx / (double)screenCount;
+                    //double w = (double)rx / (double)screenCount;
+                    double w = (double)rx;
                     double h = (double)ry; /// (double)screenCount;
                     Screen sc = new Screen(i, l, b, w, h);
 
-                    //if (i == 0) { sc.tx0 = (double)i / (double)screenCount; } 
-                    sc.tx0 = (double)i / (double)screenCount;
-                    //else { sc.tx0 = (double)i / (double)screenCount - 1.0 / 24.0; }
-
-                    //if (i == 0) { sc.tx1 = ((double)i + 1.0) / (double)screenCount + 2.0 / 24.0; }
-                    sc.tx1 = ((double)i + 1.0) / (double)screenCount; 
-                    //else { sc.tx1 = ((double)i + 1.0) / (double)screenCount + 1.0 / 24.0; }
+                    //sc.tx0 = (double)i / (double)screenCount;
+                    //sc.tx1 = ((double)i + 1.0) / (double)screenCount; 
+                    sc.tx0 = 0.0;
+                    sc.tx1 = 1.0; 
 
                     sc.ty0 = 0.0;
                     sc.ty1 = 1.0;

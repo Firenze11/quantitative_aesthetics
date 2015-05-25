@@ -80,10 +80,10 @@ namespace testmediasmall
 
         //sequence control
         static bool issequencing = false;
-        static double sequenceDurationEnlarge = 3.0;
+        static double sequenceDurationEnlarge = 1.0;
         static double sequenceDuration;
         static int sequenceStartF;
-        static double sequenceTriggerDist = 10;
+        static double sequenceTriggerDist = 15;
         static string sequenceDir;
         static int squenceExtension = 0;
 
@@ -601,20 +601,8 @@ namespace testmediasmall
         {
             // if (!ison) { return; }
             double _tx0, _tx1, _ty0, _ty1, a;
-
-            if (ismotion)
-            {
-                a = 0.3;
-                ///if (motioncount % motionInterval == 0)
-                //{
-                for (int i = motioncount; i < 1; i += motionInterval)
-                {
-                    vbit.FromFrame(MediaWindow.Vframe_repository[cframe - i].pix_data);
-                    vbit.Draw(left, bottom, w, h, a);
-                }
-            }
-
-            else if (!iszooming || (iszooming && isfading))
+            a = 1.0;
+            if (!iszooming || (iszooming && isfading))
             {
                 //byte[, ,] px = MediaWindow.Vframe_repository[cframe].pix_data;
                 byte[, ,] px;
@@ -627,18 +615,40 @@ namespace testmediasmall
                     {
                         threshold += 10;
                     }
-
                     gazeRadius += 10;
                 }
-
-                else { px = MediaWindow.Vframe_repository[cframe].pix_data; }
+                else 
+                { 
+                    px = MediaWindow.Vframe_repository[cframe].pix_data;
+                    if (issequencing)
+                    {
+                        if (id != 0)
+                        {
+                            a = 0.3;
+                        }
+                        //if (sequenceDir == "left")
+                        //{
+                        //    if (id != 0)
+                        //    {
+                        //        a = 0.3;
+                        //    }
+                        //}
+                        //else
+                        //{
+                        //    if (id != 2)
+                        //    {
+                        //        a = 0.3;
+                        //    }
+                        //}
+                    }
+                }
                 vbit.FromFrame(px);
                 vbit.Update();
                 //vbit.Draw(x0, y0, wd, ht, 1.0);
 
                 GL.Enable(EnableCap.Texture2D);
                 GL.BindTexture(TextureTarget.Texture2D, vbit.texid);
-                GL.Color4(1.0, 1.0, 1.0, 1.0);
+                GL.Color4(1.0, 1.0, 1.0, a);
                 GL.Begin(PrimitiveType.Quads);
 
                 GL.TexCoord2(tx0, ty0);

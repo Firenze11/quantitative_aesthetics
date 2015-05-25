@@ -89,7 +89,7 @@ namespace testmediasmall
             //if (MediaWindow.Vframe_repository.Count >= MediaWindow.maxframes)
             //    timer.Interval = 120;
             //else
-                timer.Interval = 60;
+                timer.Interval = 120;
             timer.Enabled = true;
             timer.Start();
             timer.Tick += new EventHandler(timer_Tick);

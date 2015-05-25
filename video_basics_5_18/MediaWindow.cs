@@ -53,7 +53,7 @@ namespace testmediasmall
         //global control
         static bool checkVideo = false;
         static bool playbackmode = false;
-        static int maxframes = 1000;
+        static int maxframes = 1500;
         static int minframes = 40;
 
         static int skippedFrameRange = 10;
@@ -79,7 +79,7 @@ namespace testmediasmall
         static Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
 
         //computer setup
-        public bool Laptop = true;
+        public bool Laptop = false;
         
         public void Initialize()
         {

@@ -19,7 +19,7 @@ namespace testmediasmall
         VBitmap vbit;
 
         public enum Mode { zoom, sequence, motion, pan, color}
-        public Mode mode = Mode.color;
+        public Mode mode = Mode.sequence;
 
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
@@ -32,7 +32,6 @@ namespace testmediasmall
         public Vector3d projF = new Vector3d();//projected focus
         public byte[] gazeColor = new byte[3];
         Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
-        double gazeOptFlow = 0.0;
         Vector3d gazeVector;
         int lastf_gazeMedium = 8;
         int lastf_motionPicture = 3;
@@ -83,10 +82,10 @@ namespace testmediasmall
 
         //sequence control
         static bool issequencing = false;
-        static double sequenceDurationEnlarge = 9.0;
+        static double sequenceDurationEnlarge = 3.0;
         static double sequenceDuration;
         static int sequenceStartF;
-        static double sequenceTriggerDist = 40;
+        static double sequenceTriggerDist = 10;
         static string sequenceDir;
         static int squenceExtension = 0;
 
@@ -180,7 +179,6 @@ namespace testmediasmall
                 projGM *= (1.0 / lastf_gazeMedium);
                 for (int i = 0; i < lastf_gazeMedium; i++) { deviation += (gazeL[gazeL.Count - i - 1] - projGM).LengthSquared; } //"standard dev"
                 deviation = Math.Sqrt(deviation);
-                Console.WriteLine("deviation: " + deviation);
             }
 
             if (gazeL.Count >1)
@@ -327,11 +325,11 @@ namespace testmediasmall
                     {
                         Console.Write(MediaWindow.Screens[i].cframe + ", ");
                     }
-                    Console.WriteLine();
+                    Console.WriteLine("sequenceDuration = " + sequenceDuration);
                 }
                 else { return; }
             }
-            if (issequencing && cframeSmooth > sequenceStartF + 1.33333 * sequenceDuration) 
+            if (issequencing && cframeSmooth > sequenceStartF + 1.66667 * sequenceDuration || cframeSmooth > MediaWindow.Vframe_repository.Count - 2.0) 
             {
                 if (sequenceDir == "right")
                 {
@@ -340,7 +338,7 @@ namespace testmediasmall
                         MediaWindow.Screens[i].cframeSmooth = (double)MediaWindow.Screens[2].cframe; //in case 3 screens are not syncronized after sequencing period
                     }
                 }
-                else //if (sequenceDir == "left")
+                else if (sequenceDir == "left")
                 {
                     for (int i = 0; i < MediaWindow.screenCount; i++)
                     {
@@ -363,26 +361,26 @@ namespace testmediasmall
                 {
                     if (id == 2)
                     {
-                        if (cframeSmooth <= sequenceStartF + sequenceDuration)
+                        if (cframeSmooth <= sequenceStartF + 0.33333 * sequenceDuration)
                         {
                             cframeSmooth -= (1.0 - 0.33333); //cframe will increase at only one third of nomal rate; one third because screenCount = 3
                         }
-                        else if (cframeSmooth >= sequenceStartF + sequenceDuration)
+                        else //if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration)
                         {
-                            cframeSmooth += 2.0; //cframe will increase at three times of nomal rate
-                            Console.WriteLine(id +" is increasing at 3 times, cf = " + cframeSmooth);
+                            cframeSmooth += 1.0; //cframe will increase at two times of nomal rate
+                            Console.WriteLine(id +" is increasing at 2 times, cf = " + cframeSmooth);
                         }
                     }
                     if (id == 1)
                     {
-                        if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration && cframeSmooth <= sequenceStartF + sequenceDuration)
+                        if (cframeSmooth <= sequenceStartF + 0.66667 * sequenceDuration)
                         {
                             cframeSmooth -= (1.0 - 0.66667); //cframe will increase at two thirds of nomal rate
                         }
                         else if (cframeSmooth >= sequenceStartF + sequenceDuration )
                         {
-                            cframeSmooth += 1.0; //cframe will increase at two times of nomal rate
-                            Console.WriteLine(id + " is increasing at 2 times, cf = " + cframeSmooth);
+                            cframeSmooth += 1.0; //cframe will increase at three times of nomal rate
+                            Console.WriteLine(id + " is increasing at 1.5 times, cf = " + cframeSmooth);
                         }
                     }
                 }
@@ -390,58 +388,30 @@ namespace testmediasmall
                 {
                     if (id == 0)
                     {
-                        if (cframeSmooth <= sequenceStartF + sequenceDuration)
+                        if (cframeSmooth <= sequenceStartF + 0.33333 * sequenceDuration)
                         {
                             cframeSmooth -= (1.0 - 0.33333); 
                         }
-                        else if (cframeSmooth >= sequenceStartF + sequenceDuration)
+                        else //if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration)
                         {
-                            cframeSmooth += 2.0; 
-                            Console.WriteLine(id + " is increasing at 3 times, cf = " + cframeSmooth);
+                            cframeSmooth += 1.0; 
+                            Console.WriteLine(id + " is increasing at 2 times, cf = " + cframeSmooth);
                         }
                     }
-                    if (id == 1 && cframe >= sequenceStartF + 0.33333 * sequenceDuration)
+                    if (id == 1 )
                     {
-                        if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration && cframeSmooth <= sequenceStartF + sequenceDuration)
+                        if (cframeSmooth <= sequenceStartF + 0.66667 * sequenceDuration)
                         {
                             cframeSmooth -= (1.0 - 0.66667); 
                         }
                         else if (cframeSmooth >= sequenceStartF + sequenceDuration)
                         {
-                            cframeSmooth += 1.0;
-                            Console.WriteLine(id + " is increasing at 2 times, cf = " + cframeSmooth);
+                            cframeSmooth += 0.5;
+                            Console.WriteLine(id + " is increasing at 1.5 times, cf = " + cframeSmooth);
                         }
                     }
                 }
             }
-
-            //double x = MediaWindow.Vframe_repository[cframe].mDirSmth.X;
-            //double sequenceRate = 0.6;
-            //if (x >= 0.5)
-            //{
-            //    //MediaWindow.Screens[0].cframeSmooth -= 2.0 * sequenceRate * x;
-            //    //cframeSmooth -= sequenceRate * x;
-            //    MediaWindow.Screens[0].cframeSmooth -= 1.0;
-            //    cframeSmooth -= 0.5;
-            //}
-            //else if (x <= -0.5)
-            //{
-            //    MediaWindow.Screens[0].cframeSmooth += 1.0;
-            //    cframeSmooth += 0.5;
-            //}
-            //else
-            //{
-            //    MediaWindow.Screens[0].cframeSmooth = cframe;
-            //    MediaWindow.Screens[2].cframeSmooth = cframe;
-            //}
-
-            //if (id == 1 && cframe > 0)
-            //{
-            //    if (Math.Abs(MediaWindow.Vframe_repository[cframe].mDirSmth.X - MediaWindow.Vframe_repository[cframe-1].mDirSmth.X) > 0.4)
-            //    {
-            //        Console.WriteLine(cframe + " !!!direction changed!!!");
-            //    }
-            //}
         }
 
         void DoColor() {
@@ -626,6 +596,7 @@ namespace testmediasmall
             }
             return recreate_pix_data;
         }
+
         public void FrameUpdate()
         {
             if (!ison) { return; }
@@ -769,7 +740,7 @@ namespace testmediasmall
                 }
                 vbit.Update();
 
-                if (isfading) { a = Math.Min(1.0, Math.Max(0, 1.0 - (double)(0.25 * fadecount * fadecount) / ((double)fadeduration))); }//Aiko
+                if (isfading) { a = Math.Min(1.0, Math.Max(0, 1.0 - (double)(0.25 * fadecount * fadecount) / ((double)fadeduration))); }
                 else { a = 1.0; }
 
                 GL.Enable(EnableCap.Texture2D);

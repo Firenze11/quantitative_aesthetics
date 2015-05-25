@@ -72,6 +72,7 @@ namespace testmediasmall
 
         //gaze property
         public static Vector3d dpoint = new Vector3d();
+        public static List<Vector3d> gazeL = new List<Vector3d>();
         static byte[] gazeColor = new byte[3];
         static Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
 
@@ -300,7 +301,8 @@ namespace testmediasmall
             dpoint.Y = (1.0 - dpoint.Y) * ry;
             dpoint.X = dpoint.X * rx;
             dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
-
+            gazeL.Add(dpoint);
+            if (gazeL.Count > 30) { gazeL.RemoveAt(0); }
         }
 
         void CreateScreens()
@@ -332,11 +334,15 @@ namespace testmediasmall
         
         void PlayBack()
         {
+            Screen.framecount++; 
             for (int i = 0; i < Screens.Count; i++)
             {
                 Screens[i].OnTimeLapse(dpoint);
             }
-
+            for (int i = 0; i < Screens.Count; i++)
+            {
+                Screens[i].FrameUpdate();
+            }
             for (int i = 0; i < Screens.Count; i++)
             {
                 if (Screens[i].ison) { Screens[i].DrawVbit(); }

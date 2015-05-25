@@ -53,7 +53,7 @@ namespace testmediasmall
         //global control
         static bool checkVideo = false;
         static bool playbackmode = false;
-        static int maxframes = 1000;
+        static int maxframes = 1500;
         static int minframes = 40;
 
         static int skippedFrameRange = 10;

@@ -80,10 +80,10 @@ namespace testmediasmall
 
         //sequence control
         static bool issequencing = false;
-        static double sequenceDurationEnlarge = 19.0;
+        static double sequenceDurationEnlarge = 3.0;
         static double sequenceDuration;
         static int sequenceStartF;
-        static double sequenceTriggerDist = 40;
+        static double sequenceTriggerDist = 10;
         static string sequenceDir;
         static int squenceExtension = 0;
 
@@ -326,7 +326,7 @@ namespace testmediasmall
                 }
                 else { return; }
             }
-            if (issequencing && cframeSmooth > sequenceStartF + 1.33333 * sequenceDuration || cframeSmooth > MediaWindow.Vframe_repository.Count - 2.0) 
+            if (issequencing && cframeSmooth > sequenceStartF + 1.66667 * sequenceDuration || cframeSmooth > MediaWindow.Vframe_repository.Count - 2.0) 
             {
                 if (sequenceDir == "right")
                 {
@@ -362,22 +362,22 @@ namespace testmediasmall
                         {
                             cframeSmooth -= (1.0 - 0.33333); //cframe will increase at only one third of nomal rate; one third because screenCount = 3
                         }
-                        else if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration)
+                        else //if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration)
                         {
-                            cframeSmooth += 2.0; //cframe will increase at three times of nomal rate
-                            Console.WriteLine(id +" is increasing at 3 times, cf = " + cframeSmooth);
+                            cframeSmooth += 1.0; //cframe will increase at two times of nomal rate
+                            Console.WriteLine(id +" is increasing at 2 times, cf = " + cframeSmooth);
                         }
                     }
                     if (id == 1)
                     {
-                        if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration && cframeSmooth <= sequenceStartF + 0.66667 * sequenceDuration)
+                        if (cframeSmooth <= sequenceStartF + 0.66667 * sequenceDuration)
                         {
                             cframeSmooth -= (1.0 - 0.66667); //cframe will increase at two thirds of nomal rate
                         }
-                        else if (cframeSmooth >= sequenceStartF + 0.66667 * sequenceDuration )
+                        else if (cframeSmooth >= sequenceStartF + sequenceDuration )
                         {
-                            cframeSmooth += 1.0; //cframe will increase at two times of nomal rate
-                            Console.WriteLine(id + " is increasing at 2 times, cf = " + cframeSmooth);
+                            cframeSmooth += 1.0; //cframe will increase at three times of nomal rate
+                            Console.WriteLine(id + " is increasing at 1.5 times, cf = " + cframeSmooth);
                         }
                     }
                 }
@@ -389,22 +389,22 @@ namespace testmediasmall
                         {
                             cframeSmooth -= (1.0 - 0.33333); 
                         }
-                        else if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration)
+                        else //if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration)
                         {
-                            cframeSmooth += 2.0; 
-                            Console.WriteLine(id + " is increasing at 3 times, cf = " + cframeSmooth);
+                            cframeSmooth += 1.0; 
+                            Console.WriteLine(id + " is increasing at 2 times, cf = " + cframeSmooth);
                         }
                     }
-                    if (id == 1 && cframe >= sequenceStartF + 0.33333 * sequenceDuration)
+                    if (id == 1 )
                     {
-                        if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration && cframeSmooth <= sequenceStartF + 0.66667 * sequenceDuration)
+                        if (cframeSmooth <= sequenceStartF + 0.66667 * sequenceDuration)
                         {
                             cframeSmooth -= (1.0 - 0.66667); 
                         }
-                        else if (cframeSmooth >= sequenceStartF + 0.66667 * sequenceDuration)
+                        else if (cframeSmooth >= sequenceStartF + sequenceDuration)
                         {
-                            cframeSmooth += 1.0;
-                            Console.WriteLine(id + " is increasing at 2 times, cf = " + cframeSmooth);
+                            cframeSmooth += 0.5;
+                            Console.WriteLine(id + " is increasing at 1.5 times, cf = " + cframeSmooth);
                         }
                     }
                 }

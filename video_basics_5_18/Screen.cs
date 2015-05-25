@@ -71,6 +71,7 @@ namespace testmediasmall
         //color control
         public bool iscolor = false;
         public int threshold = 0;
+        double gazeRadius = 0.0;
 
         //fade control
         public bool isfading = false;
@@ -212,6 +213,7 @@ namespace testmediasmall
                     framecount = 0;
                     isfading = false;
                     threshold = 0;
+                    iscolor = false;
 
                     Console.WriteLine(id + " stops zooming, cf = " + cframe);
                     return;
@@ -224,19 +226,12 @@ namespace testmediasmall
                     cframe = newFrame;
                     cframeSmooth = newFrame;
                     Console.WriteLine(id + " is fading, pf = " + pframe +", cf = " + cframe);
-
+                    iscolor = false;
                     fadecount = 0;
                 }
                 zoomcount++;
                 if (isfading) { fadecount++; }
             }
-            //else if (deviation < 100)
-            //{
-            //    //draw the color change 
-            //    byte[,,] limitedPalette = RecreateColor(MediaWindow.Vframe_repository[cframe], 5.0);
-            //    //limitedPalette;
-
-            //}
             else if (deviation < 20 && deviation > 0.00000000001 && framecount > transitionInterval) //avoid zooming when there's no gaze data (dev = 0)
             {
                 projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
@@ -245,14 +240,15 @@ namespace testmediasmall
                 iszooming = true;
                 zoomcount = 0;
                 pframe = cframe; ///Frame reassignments
-
+                //DoColor();
                 Console.WriteLine(id + " is zooming, cf = "+cframe);
 
                 //choose which scene to show (just remember it for now, show it later)
-                newFrame = MediaWindow.domiHueTransition(cframe, true); 
+                newFrame = MediaWindow.maskAvgRGBTransition(cframe, num,gazeColor, true); 
             }
             else
             {
+                DoColor();
             }
         }
         void DoPan()
@@ -429,7 +425,7 @@ namespace testmediasmall
                              + (quad.B - px[0]) * (quad.B - px[0]));
         }
 
-        byte[, ,] RecreateColor(VFrame vf, double threshold, bool distinctColor)
+        byte[, ,] RecreateScreenColor(VFrame vf, double threshold, bool distinctColor)
         {
             byte[, ,] recreate_pix_data = new byte[MediaWindow.ry, MediaWindow.rx, 3];
 
@@ -486,6 +482,80 @@ namespace testmediasmall
                         recreate_pix_data[j, i, 2] = vf.initialCMap[minId].R;
                         recreate_pix_data[j, i, 1] = vf.initialCMap[minId].G;
                         recreate_pix_data[j, i, 0] = vf.initialCMap[minId].B;
+                    }
+                }
+            }
+            return recreate_pix_data;
+        }
+
+        byte[, ,] RecreateGazeColor(VFrame vf, double threshold, bool distinctColor)
+        {
+            byte[, ,] recreate_pix_data = new byte[MediaWindow.ry, MediaWindow.rx, 3];
+
+            for (int j = 0; j < MediaWindow.ry; j++)
+            {
+                for (int i = 0; i < MediaWindow.rx; i++)
+                {
+                    double min = 442.0;
+                    int minId = 0;
+                    if (deviation > 0 && deviation < 40)
+                    {
+                        if (Math.Abs(i - MediaWindow.dpoint.X) < gazeRadius && Math.Abs(j - MediaWindow.dpoint.Y) < gazeRadius)
+                        {   
+                            if (distinctColor)
+                            {
+                                for (int k = 0; k < vf.DiffColorMap.Count; k++)
+                                {
+                                    byte[] px_d = { vf.pix_data[j, i, 0], vf.pix_data[j, i, 1], vf.pix_data[j, i, 2] };
+                                    double dist = ColorDist(px_d, vf.DiffColorMap[k]);
+                                    if (dist < threshold)
+                                    {
+                                        minId = k;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        if (dist < min)
+                                        {
+                                            min = dist;
+                                            minId = k;
+                                        }
+                                    }
+                                }
+                                recreate_pix_data[j, i, 2] = vf.DiffColorMap[minId].R;
+                                recreate_pix_data[j, i, 1] = vf.DiffColorMap[minId].G;
+                                recreate_pix_data[j, i, 0] = vf.DiffColorMap[minId].B;
+                            }
+                            else
+                            {
+                                for (int k = 0; k < vf.initialCMap.Count; k++)
+                                {
+                                    byte[] px_d = { vf.pix_data[j, i, 0], vf.pix_data[j, i, 1], vf.pix_data[j, i, 2] };
+                                    double dist = ColorDist(px_d, vf.initialCMap[k]);
+                                    if (dist < threshold)
+                                    {
+                                        minId = k;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        if (dist < min)
+                                        {
+                                            min = dist;
+                                            minId = k;
+                                        }
+                                    }
+                                }
+                                recreate_pix_data[j, i, 2] = vf.initialCMap[minId].R;
+                                recreate_pix_data[j, i, 1] = vf.initialCMap[minId].G;
+                                recreate_pix_data[j, i, 0] = vf.initialCMap[minId].B;
+                            }
+                        }
+                        else {
+                            recreate_pix_data[j, i, 2] = vf.pix_data[j, i, 2];
+                            recreate_pix_data[j, i, 1] = vf.pix_data[j, i, 1];
+                            recreate_pix_data[j, i, 0] = vf.pix_data[j, i, 0];
+                        }
                     }
                 }
             }
@@ -551,16 +621,16 @@ namespace testmediasmall
                 if (iscolor)    //in the beginning deviation = 0 so must have deviation > very small number
                 {
                     //draw the color change 
-                    px = RecreateColor(MediaWindow.Vframe_repository[cframe], threshold, false);
+                    //px = RecreateScreenColor(MediaWindow.Vframe_repository[cframe], threshold, false);
+                    px = RecreateGazeColor(MediaWindow.Vframe_repository[cframe], threshold, false);
                     if (threshold <= 150)
                     {
                         threshold += 10;
                     }
-                    //Colormap domiHueList = MediaWindow.Vframe_repository[cframe].DiffColorMap;
 
-                    //limitedPalette;
-
+                    gazeRadius += 10;
                 }
+
                 else { px = MediaWindow.Vframe_repository[cframe].pix_data; }
                 vbit.FromFrame(px);
                 vbit.Update();

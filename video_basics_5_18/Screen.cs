@@ -47,8 +47,8 @@ namespace testmediasmall
         //on/off control
         public bool ison = false;
 
-        int framecount = 0; //framecount before triggering zoom again
-        int transitionInterval = 10;
+        public static int framecount = 0; //framecount before triggering zoom again
+        static int transitionInterval = 10;
 
         //pan control
         public bool ispanning = false;
@@ -80,11 +80,13 @@ namespace testmediasmall
         static int fadeduration = 40;
 
         //sequence control
-        bool issequencing = false;
-        int sequencecount = 0;
-        static int sequenceduration = 60;
-        static int sequenceStartF = 25;
-        static int sequenceInterval = 3;
+        static bool issequencing = false;
+        static double sequenceDurationEnlarge = 9.0;
+        static double sequenceDuration;
+        static int sequenceStartF;
+        static double sequenceTriggerDist = 40;
+        static string sequenceDir;
+        static int squenceExtension = 0;
 
         static int next(int n)
         {
@@ -303,52 +305,140 @@ namespace testmediasmall
                 ismotion = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
                 motioncount = 0;
             }
-            else
-            {
-            }
         }
         void DoSequence()
         {
-            //if (issequencing) //post fixation period lasts for zoomduration frames
+            if (MediaWindow.gazeL.Count < 1) return;
+            Vector3d p1 = MediaWindow.gazeL[MediaWindow.gazeL.Count - 1];
+            Vector3d p0 = MediaWindow.gazeL[MediaWindow.gazeL.Count - 2];
+            if (!issequencing)
+            {
+                if (Math.Abs(p1.X - p0.X) > sequenceTriggerDist && framecount > transitionInterval)
+                {
+                    issequencing = true;
+                    sequenceDuration = sequenceDurationEnlarge * MediaWindow.rx / Math.Abs(p1.X - p0.X);
+                    sequenceStartF = cframe;
+                    if (p1.X - p0.X > 0) { sequenceDir = "right"; } else { sequenceDir = "left"; }
+                    Console.Write("sequence starts, cf = ");
+                    for (int i = 0; i < MediaWindow.screenCount; i++)
+                    {
+                        Console.Write(MediaWindow.Screens[i].cframe + ", ");
+                    }
+                    Console.WriteLine();
+                }
+                else { return; }
+            }
+            if (issequencing && cframeSmooth > sequenceStartF + 1.33333 * sequenceDuration) 
+            {
+                if (sequenceDir == "right")
+                {
+                    for (int i = 0; i < MediaWindow.screenCount; i++)
+                    {
+                        MediaWindow.Screens[i].cframeSmooth = (double)MediaWindow.Screens[2].cframe; //in case 3 screens are not syncronized after sequencing period
+                    }
+                }
+                else //if (sequenceDir == "left")
+                {
+                    for (int i = 0; i < MediaWindow.screenCount; i++)
+                    {
+                        MediaWindow.Screens[i].cframeSmooth = (double)MediaWindow.Screens[0].cframe;
+                    }
+                }
+                issequencing = false;
+                framecount = 0;
+                Console.Write("sequence end, cf = ");
+                for (int i = 0; i < MediaWindow.screenCount; i++)
+                {
+                    Console.Write((int)MediaWindow.Screens[i].cframeSmooth + ", ");
+                }
+                Console.WriteLine();
+                return;
+            }
+            if (issequencing)
+            {
+                if (sequenceDir == "left")
+                {
+                    if (id == 2)
+                    {
+                        if (cframeSmooth <= sequenceStartF + sequenceDuration)
+                        {
+                            cframeSmooth -= (1.0 - 0.33333); //cframe will increase at only one third of nomal rate; one third because screenCount = 3
+                        }
+                        else if (cframeSmooth >= sequenceStartF + sequenceDuration)
+                        {
+                            cframeSmooth += 2.0; //cframe will increase at three times of nomal rate
+                            Console.WriteLine(id +" is increasing at 3 times, cf = " + cframeSmooth);
+                        }
+                    }
+                    if (id == 1)
+                    {
+                        if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration && cframeSmooth <= sequenceStartF + sequenceDuration)
+                        {
+                            cframeSmooth -= (1.0 - 0.66667); //cframe will increase at two thirds of nomal rate
+                        }
+                        else if (cframeSmooth >= sequenceStartF + sequenceDuration )
+                        {
+                            cframeSmooth += 1.0; //cframe will increase at two times of nomal rate
+                            Console.WriteLine(id + " is increasing at 2 times, cf = " + cframeSmooth);
+                        }
+                    }
+                }
+                else if (sequenceDir == "right")
+                {
+                    if (id == 0)
+                    {
+                        if (cframeSmooth <= sequenceStartF + sequenceDuration)
+                        {
+                            cframeSmooth -= (1.0 - 0.33333); 
+                        }
+                        else if (cframeSmooth >= sequenceStartF + sequenceDuration)
+                        {
+                            cframeSmooth += 2.0; 
+                            Console.WriteLine(id + " is increasing at 3 times, cf = " + cframeSmooth);
+                        }
+                    }
+                    if (id == 1 && cframe >= sequenceStartF + 0.33333 * sequenceDuration)
+                    {
+                        if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration && cframeSmooth <= sequenceStartF + sequenceDuration)
+                        {
+                            cframeSmooth -= (1.0 - 0.66667); 
+                        }
+                        else if (cframeSmooth >= sequenceStartF + sequenceDuration)
+                        {
+                            cframeSmooth += 1.0;
+                            Console.WriteLine(id + " is increasing at 2 times, cf = " + cframeSmooth);
+                        }
+                    }
+                }
+            }
+
+            //double x = MediaWindow.Vframe_repository[cframe].mDirSmth.X;
+            //double sequenceRate = 0.6;
+            //if (x >= 0.5)
             //{
-            //    if (sequencecount > sequenceduration)
+            //    //MediaWindow.Screens[0].cframeSmooth -= 2.0 * sequenceRate * x;
+            //    //cframeSmooth -= sequenceRate * x;
+            //    MediaWindow.Screens[0].cframeSmooth -= 1.0;
+            //    cframeSmooth -= 0.5;
+            //}
+            //else if (x <= -0.5)
+            //{
+            //    MediaWindow.Screens[0].cframeSmooth += 1.0;
+            //    cframeSmooth += 0.5;
+            //}
+            //else
+            //{
+            //    MediaWindow.Screens[0].cframeSmooth = cframe;
+            //    MediaWindow.Screens[2].cframeSmooth = cframe;
+            //}
+
+            //if (id == 1 && cframe > 0)
+            //{
+            //    if (Math.Abs(MediaWindow.Vframe_repository[cframe].mDirSmth.X - MediaWindow.Vframe_repository[cframe-1].mDirSmth.X) > 0.4)
             //    {
-            //        issequencing = false;
-            //        Console.WriteLine(id + " stops sequencing");
-            //        return;
+            //        Console.WriteLine(cframe + " !!!direction changed!!!");
             //    }
-            //    sequencecount++;
             //}
-            //else if (cframe > sequenceStartF) //any condition that triggers motion mode, maybe gaze optical flow....
-            //{
-            //    issequencing = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
-            //    sequencecount = 0;
-            //    MediaWindow.Screens[next(id)].ison = true;
-            //    MediaWindow.Screens[next(id)].issequencing = true;
-            //    MediaWindow.Screens[next(id)].sequencecount = 0;
-            //    MediaWindow.Screens[next(id)].cframe = cframe - sequenceInterval;
-            //    Console.WriteLine(id + " is sequencing, cframe = " + cframe + ", " + next(id) + " cframe = " + (cframe - sequenceInterval));
-            //}
-            if (id != 1) { return; }
-            double x = MediaWindow.Vframe_repository[cframe].mDirSmth.X;
-            double sequenceRate = 0.6;
-            if (x >= 0.5)
-            {
-                //MediaWindow.Screens[0].cframeSmooth -= 2.0 * sequenceRate * x;
-                //cframeSmooth -= sequenceRate * x;
-                MediaWindow.Screens[0].cframeSmooth -= 1.0;
-                cframeSmooth -= 0.5;
-            }
-            else if (x <= -0.5)
-            {
-                MediaWindow.Screens[0].cframeSmooth += 1.0;
-                cframeSmooth += 0.5;
-            }
-            else
-            {
-                MediaWindow.Screens[0].cframeSmooth = cframe;
-                MediaWindow.Screens[2].cframeSmooth = cframe;
-            }
         }
 
         void DoColor() {
@@ -428,6 +518,7 @@ namespace testmediasmall
             return recreate_pix_data;
         }
 
+<<<<<<< HEAD
         byte[, ,] RecreateGazeColor(VFrame vf, double threshold, bool distinctColor)
         {
             byte[, ,] recreate_pix_data = new byte[MediaWindow.ry, MediaWindow.rx, 3];
@@ -502,9 +593,11 @@ namespace testmediasmall
             return recreate_pix_data;
         }
         private void FrameUpdate()
+=======
+        public void FrameUpdate()
+>>>>>>> 9f4848e1c12c376696d5d1b86667798736aa1b66
         {
             if (!ison) { return; }
-            framecount++;
             cframeSmooth += 1.0;
             cframe = (int) cframeSmooth; 
 
@@ -521,12 +614,6 @@ namespace testmediasmall
             {
                 pframe = 0;
             }
-            //if (id > 0 && cframe >= 10 && MediaWindow.Screens[id - 1].ison == false)
-            //{
-            //    MediaWindow.Screens[id - 1].ison = true;
-            //    MediaWindow.Screens[id - 1].cframe = 0;
-            //    Console.WriteLine((id - 1) + " is on, cf = " + MediaWindow.Screens[id - 1].cframe);
-            //}
         }
 
         public void OnTimeLapse(Vector3d gazeInput)
@@ -540,9 +627,6 @@ namespace testmediasmall
             if (mode == Mode.sequence) DoSequence();
             if (mode == Mode.pan) DoPan();
             if (mode == Mode.color) DoColor();
-
-            FrameUpdate();
-
             //////////////////////////////////////////////////////////////////////////////////try other things too
         }
 

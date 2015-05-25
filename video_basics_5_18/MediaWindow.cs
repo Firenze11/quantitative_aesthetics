@@ -79,7 +79,7 @@ namespace testmediasmall
         static Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
 
         //computer setup
-        public bool Laptop = true;
+        public bool Laptop = false;
         
         public void Initialize()
         {

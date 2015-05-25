@@ -19,7 +19,7 @@ namespace testmediasmall
         VBitmap vbit;
 
         public enum Mode { zoom, sequence, motion, pan, color}
-        public Mode mode = Mode.sequence;
+        public Mode mode = Mode.zoom;
 
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
@@ -78,16 +78,16 @@ namespace testmediasmall
         //fade control
         public bool isfading = false;
         int fadecount = 0;
-        static int fadeduration = 40;
+        static int fadeduration = 35;
 
         //sequence control
         static bool issequencing = false;
-        static double sequenceDurationEnlarge = 1.0;
+        public static double sequenceDurationEnlarge = 3.0;
         static double sequenceDuration;
         static int sequenceStartF;
-        static double sequenceTriggerDist = 15;
+        static double sequenceTriggerDist = 40;
         static string sequenceDir;
-        static int squenceExtension = 0;
+        static int sequenceExtension = 0;
 
         static int next(int n)
         {
@@ -126,7 +126,6 @@ namespace testmediasmall
                 gazeL.Clear();
                 deviation = 0.0;
                 gazeColor[0] = 255; gazeColor[1] = 255; gazeColor[2] = 255;
-                gazeVector = new Vector3d(0.0, 0.0, 0.0);
             }
         }
         private Vector3d ProjectedGaze(Vector3d gazeInput)
@@ -170,16 +169,18 @@ namespace testmediasmall
             else if (projG.X > 0.75 * w) { num = 2; }
             else { num = 0; }
 
-            //gaze medium
-            if (gazeL.Count >= lastf_gazeMedium)
-            {
-                projGM = new Vector3d(0.0, 0.0, 0.0);
-                deviation = 0;
-                for (int i = 0; i < lastf_gazeMedium; i++) { projGM += gazeL[gazeL.Count - i - 1]; }
-                projGM *= (1.0 / lastf_gazeMedium);
-                for (int i = 0; i < lastf_gazeMedium; i++) { deviation += (gazeL[gazeL.Count - i - 1] - projGM).LengthSquared; } //"standard dev"
-                deviation = Math.Sqrt(deviation);
-            }
+            ////gaze medium
+            //if (gazeL.Count >= lastf_gazeMedium)
+            //{
+            //    projGM = new Vector3d(0.0, 0.0, 0.0);
+            //    deviation = 0;
+            //    for (int i = 0; i < lastf_gazeMedium; i++) { projGM += gazeL[gazeL.Count - i - 1]; }
+            //    projGM *= (1.0 / lastf_gazeMedium);
+            //    for (int i = 0; i < lastf_gazeMedium; i++) { deviation += (gazeL[gazeL.Count - i - 1] - projGM).LengthSquared; } //"standard dev"
+            //    deviation = Math.Sqrt(deviation);
+            //}
+            projGM = ProjectedGaze(MediaWindow.gazeMedium);
+            deviation = MediaWindow.deviation;
 
             if (gazeL.Count >1)
                 gazeVector = gazeL[gazeL.Count - 1] - gazeL[gazeL.Count - 2];
@@ -314,7 +315,7 @@ namespace testmediasmall
             Vector3d p0 = MediaWindow.gazeL[MediaWindow.gazeL.Count - 2];
             if (!issequencing)
             {
-                if (Math.Abs(p1.X - p0.X) > sequenceTriggerDist && framecount > transitionInterval)
+                if (Math.Abs(p1.X - p0.X) > sequenceTriggerDist && framecount > transitionInterval && (p1.X > 0.6 * MediaWindow.rx ||p1.X < 0.4 * MediaWindow.rx))
                 {
                     issequencing = true;
                     sequenceDuration = sequenceDurationEnlarge * MediaWindow.rx / Math.Abs(p1.X - p0.X);
@@ -426,6 +427,14 @@ namespace testmediasmall
                     threshold = 0;
                     return;
                 }
+                if (deviation > 40)
+                {
+                    iscolor = false;
+                    colorcount = 0;
+                    gazeRadius = 0.0;
+                    threshold = 0;
+                    return;
+                }
                 colorcount++;
             }
             else if (deviation > 0 && deviation < 40)
@@ -434,13 +443,8 @@ namespace testmediasmall
                 iscolor = true;
                 colorcount = 0;
                 threshold = 0;
-                newFrame = MediaWindow.maskAvgRGBTransition(cframe, num,gazeColor, false); 
-            }
-            else if (deviation > 40)
-            {
-                colorcount = 0;
-                gazeRadius = 0.0;
-                threshold = 0;
+                newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, false);
+                Console.WriteLine(id);
             }
             else 
             { 
@@ -668,7 +672,9 @@ namespace testmediasmall
                     {
                         if (id != 0)
                         {
-                            a = 0.3;
+                            if (MediaWindow.multipleScreen)
+                            { a = 1.0; }
+                            else { a = 0.3; }
                         }
                         //if (sequenceDir == "left")
                         //{

@@ -53,7 +53,8 @@ namespace testmediasmall
         //global control
         static bool checkVideo = false;
         static bool playbackmode = false;
-        static int maxframes = 1500;
+        public static bool multipleScreen = true;
+        static int maxframes = 3000;
         static int minframes = 40;
 
         static int skippedFrameRange = 10;
@@ -77,9 +78,12 @@ namespace testmediasmall
         public static List<Vector3d> gazeL = new List<Vector3d>();
         static byte[] gazeColor = new byte[3];
         static Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
+        int lastf_gazeMedium = 8;
+        public static Vector3d gazeMedium = new Vector3d();
+        public static double deviation = 0.0;
 
         //computer setup
-        public bool Laptop = false;
+        public bool Laptop = true;
         
         public void Initialize()
         {
@@ -304,6 +308,19 @@ namespace testmediasmall
             dpoint.X = dpoint.X * rx;
             gazeL.Add(dpoint);
             if (gazeL.Count > 30) { gazeL.RemoveAt(0); }
+
+            //gaze medium
+            if (gazeL.Count >= lastf_gazeMedium)
+            {
+                gazeMedium = new Vector3d(0.0, 0.0, 0.0);
+                deviation = 0;
+                for (int i = 0; i < lastf_gazeMedium; i++) { gazeMedium += gazeL[gazeL.Count - i - 1]; }
+                gazeMedium *= (1.0 / lastf_gazeMedium);
+                for (int i = 0; i < lastf_gazeMedium; i++) { deviation += (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared; } //"standard dev"
+                deviation = Math.Sqrt(deviation);
+            }
+
+
             if (!Laptop) { dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);}
         }
 
@@ -313,22 +330,37 @@ namespace testmediasmall
             {
                 for (int i = 0; i < screenCount; i++)
                 {
-                    //double l = (double)i * (double)rx / (double)screenCount;
-                    double l = 0.0;
-                    double b = 0.0;//0.5 * (double)ry * (1.0 - (1.0 / (double)screenCount));
-                    //double w = (double)rx / (double)screenCount;
-                    double w = (double)rx;
-                    double h = (double)ry; /// (double)screenCount;
-                    Screen sc = new Screen(i, l, b, w, h);
+                    if (multipleScreen)
+                    {
+                        double l = (double)i * (double)rx / (double)screenCount;
+                        double b = 0.0;//0.5 * (double)ry * (1.0 - (1.0 / (double)screenCount));
+                        double w = (double)rx / (double)screenCount;
+                        double h = (double)ry; /// (double)screenCount;
+                        Screen sc = new Screen(i, l, b, w, h);
 
-                    //sc.tx0 = (double)i / (double)screenCount;
-                    //sc.tx1 = ((double)i + 1.0) / (double)screenCount; 
-                    sc.tx0 = 0.0;
-                    sc.tx1 = 1.0; 
+                        sc.tx0 = (double)i / (double)screenCount;
+                        sc.tx1 = ((double)i + 1.0) / (double)screenCount;
 
-                    sc.ty0 = 0.0;
-                    sc.ty1 = 1.0;
-                    Screens.Add(sc);
+                        sc.ty0 = 0.0;
+                        sc.ty1 = 1.0;
+                        Screens.Add(sc);
+                        Screen.sequenceDurationEnlarge = 3.0;
+                    }
+                    else {
+                        double l = 0.0;
+                        double b = 0.0;//0.5 * (double)ry * (1.0 - (1.0 / (double)screenCount));
+                        double w = (double)rx;
+                        double h = (double)ry; /// (double)screenCount;
+                        Screen sc = new Screen(i, l, b, w, h);
+
+                        sc.tx0 = 0.0;
+                        sc.tx1 = 1.0; 
+
+                        sc.ty0 = 0.0;
+                        sc.ty1 = 1.0;
+                        Screens.Add(sc);
+                        Screen.sequenceDurationEnlarge = 1.0;
+                    }
                 }
             }
         }

@@ -302,7 +302,6 @@ namespace testmediasmall
             dpoint = (lnorm + rnorm) * 0.5;
             dpoint.Y = (1.0 - dpoint.Y) * ry;
             dpoint.X = dpoint.X * rx;
-            dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
             gazeL.Add(dpoint);
             if (gazeL.Count > 30) { gazeL.RemoveAt(0); }
             if (!Laptop) { dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);}

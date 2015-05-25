@@ -71,9 +71,11 @@ namespace testmediasmall
 
         //color control
         public bool iscolor = false;
+        int colorcount = 0;
+        static int colorduration = 50; 
         public int threshold = 0;
         double gazeRadius = 0.0;
-
+        
         //fade control
         public bool isfading = false;
         int fadecount = 0;
@@ -216,7 +218,7 @@ namespace testmediasmall
                     isfading = false;
                     threshold = 0;
                     iscolor = false;
-
+                    gazeRadius = 0.0;
                     Console.WriteLine(id + " stops zooming, cf = " + cframe);
                     return;
                 }
@@ -229,6 +231,7 @@ namespace testmediasmall
                     cframeSmooth = newFrame;
                     Console.WriteLine(id + " is fading, pf = " + pframe +", cf = " + cframe);
                     iscolor = false;
+                    gazeRadius = 0.0;
                     fadecount = 0;
                 }
                 zoomcount++;
@@ -250,7 +253,7 @@ namespace testmediasmall
             }
             else
             {
-                DoColor();
+                //DoColor();
             }
         }
         void DoPan()
@@ -442,9 +445,35 @@ namespace testmediasmall
         }
 
         void DoColor() {
-            if (deviation > 0 && deviation < 40)    //in the beginning deviation = 0 so must have deviation > very small number
+            if (iscolor)
             {
+                if (colorcount >= colorduration)
+                {
+                    iscolor = false;
+                    colorcount = 0;
+                    framecount = 0;
+                    gazeRadius = 0.0;
+                    threshold = 0;
+                    return;
+                }
+                colorcount++;
+            }
+            else if (deviation > 0 && deviation < 40)
+            {
+                //projF = projGM;
                 iscolor = true;
+                colorcount = 0;
+                threshold = 0;
+                newFrame = MediaWindow.maskAvgRGBTransition(cframe, num,gazeColor, false); 
+            }
+            else if (deviation > 40)
+            {
+                colorcount = 0;
+                gazeRadius = 0.0;
+                threshold = 0;
+            }
+            else 
+            { 
             }
         }
 
@@ -518,7 +547,6 @@ namespace testmediasmall
             return recreate_pix_data;
         }
 
-<<<<<<< HEAD
         byte[, ,] RecreateGazeColor(VFrame vf, double threshold, bool distinctColor)
         {
             byte[, ,] recreate_pix_data = new byte[MediaWindow.ry, MediaWindow.rx, 3];
@@ -529,10 +557,12 @@ namespace testmediasmall
                 {
                     double min = 442.0;
                     int minId = 0;
-                    if (deviation > 0 && deviation < 40)
+                    //if (deviation > 0 && deviation < 40)
                     {
-                        if (Math.Abs(i - MediaWindow.dpoint.X) < gazeRadius && Math.Abs(j - MediaWindow.dpoint.Y) < gazeRadius)
-                        {   
+                        if ((i - MediaWindow.dpoint.X) * (i - MediaWindow.dpoint.X) + (j - MediaWindow.dpoint.Y) * (j - MediaWindow.dpoint.Y) < gazeRadius * gazeRadius)
+                        //if ((i - ActualGaze(projF).X) * (i - ActualGaze(projF).X) + (j - ActualGaze(projF).Y) * (j - ActualGaze(projF).Y) < gazeRadius * gazeRadius) //projF                    
+                        //if (Math.Abs(i - MediaWindow.dpoint.X) < gazeRadius && Math.Abs(j - MediaWindow.dpoint.Y) < gazeRadius)   //square
+                        {
                             if (distinctColor)
                             {
                                 for (int k = 0; k < vf.DiffColorMap.Count; k++)
@@ -553,9 +583,6 @@ namespace testmediasmall
                                         }
                                     }
                                 }
-                                recreate_pix_data[j, i, 2] = vf.DiffColorMap[minId].R;
-                                recreate_pix_data[j, i, 1] = vf.DiffColorMap[minId].G;
-                                recreate_pix_data[j, i, 0] = vf.DiffColorMap[minId].B;
                             }
                             else
                             {
@@ -582,20 +609,24 @@ namespace testmediasmall
                                 recreate_pix_data[j, i, 0] = vf.initialCMap[minId].B;
                             }
                         }
-                        else {
+                        else
+                        {
                             recreate_pix_data[j, i, 2] = vf.pix_data[j, i, 2];
                             recreate_pix_data[j, i, 1] = vf.pix_data[j, i, 1];
                             recreate_pix_data[j, i, 0] = vf.pix_data[j, i, 0];
                         }
                     }
+                    //else
+                    //{
+                    //    recreate_pix_data[j, i, 2] = vf.pix_data[j, i, 2];
+                    //    recreate_pix_data[j, i, 1] = vf.pix_data[j, i, 1];
+                    //    recreate_pix_data[j, i, 0] = vf.pix_data[j, i, 0];
+                    //}
                 }
             }
             return recreate_pix_data;
         }
-        private void FrameUpdate()
-=======
         public void FrameUpdate()
->>>>>>> 9f4848e1c12c376696d5d1b86667798736aa1b66
         {
             if (!ison) { return; }
             cframeSmooth += 1.0;
@@ -653,15 +684,24 @@ namespace testmediasmall
                 byte[, ,] px;
                 if (iscolor)    //in the beginning deviation = 0 so must have deviation > very small number
                 {
+                    //..............................................for using projF,the static point
+                    Vector3d ag = ActualGaze(projF);
+                    //double s = 1.0 + zoomrate * zoomcount * zoomcount * zoomcount * zoomcount / 10000;
+                    double s = 1.0;
+                    _tx0 = ((s - 1.0) * projF.X / _rx + tx0) / s;
+                    _tx1 = ((s - 1.0) * projF.X / _rx + tx1) / s;
+                    _ty0 = ((s - 1.0) * projF.Y / _ry + ty0) / s;
+                    _ty1 = ((s - 1.0) * projF.Y / _ry + ty1) / s;
+                    //...............................................end for using projF
                     //draw the color change 
                     //px = RecreateScreenColor(MediaWindow.Vframe_repository[cframe], threshold, false);
                     px = RecreateGazeColor(MediaWindow.Vframe_repository[cframe], threshold, false);
-                    if (threshold <= 150)
+                    if (threshold <= 300)
                     {
-                        threshold += 10;
+                        threshold += 2;
                     }
 
-                    gazeRadius += 10;
+                    gazeRadius += 5;
                 }
 
                 else { px = MediaWindow.Vframe_repository[cframe].pix_data; }

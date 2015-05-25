@@ -26,7 +26,9 @@ namespace testmediasmall
         public double avgb = 0.0;
         public List<float[]> maskAvgRGBColor;
         public double totalMovement = 0.0;
-        public double domiHue = 0.0; //dominant Hue
+        public double domiHue = 0.0;
+        public Colormap initialCMap; 
+        public Colormap DiffColorMap; 
         public RGBHisto HistoR;
         public RGBHisto HistoG;
         public RGBHisto HistoB;
@@ -76,6 +78,9 @@ namespace testmediasmall
         static byte[] gazeColor = new byte[3];
         static Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
 
+        //computer setup
+        public bool Laptop = true;
+        
         public void Initialize()
         {
             try
@@ -89,14 +94,18 @@ namespace testmediasmall
             }
             VideoIN.EnumCaptureDevices();
             //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
-            //CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
-            CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi"); 
-            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
-            //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
-            //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
-            Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi"); 
-
-
+            if (Laptop)
+            {
+                CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
+                Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
+                //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
+                //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
+            }
+            else
+            {
+                CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi");
+                Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
+            }
 
             System.Threading.Thread.Sleep(2000);
             Video.SetResolution(360, 240);   //reduce resolution so that each frame is taken into the repository
@@ -284,13 +293,6 @@ namespace testmediasmall
             return n;
         }
 
-        static double ColorDist(byte[] px, RGBA_Quad quad)
-        {
-            return Math.Sqrt((quad.R - px[2]) * (quad.R - px[2])
-                             + (quad.G - px[1]) * (quad.G - px[1])
-                             + (quad.B - px[0]) * (quad.B - px[0]));
-        }
-
         void CalculateGaze()
         {
             Vector3d lnorm = new Vector3d(EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.X,
@@ -303,6 +305,7 @@ namespace testmediasmall
             dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);////////CHANGE IT!!
             gazeL.Add(dpoint);
             if (gazeL.Count > 30) { gazeL.RemoveAt(0); }
+            if (!Laptop) { dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);}
         }
 
         void CreateScreens()
@@ -377,19 +380,19 @@ namespace testmediasmall
 
             //////////////////////////////////////////////////////////////////////////////color palette code
             ColorQuant ColorQuantizer = new ColorQuant();
-            Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(Video, 25);
+            vf.initialCMap = ColorQuantizer.MedianCutQuantGeneral(Video, 16);
             //Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 16);    //sort by frequency
-            Colormap DiffColorMap = ColorQuantizer.SortByDifference(initialCMap);   //sort intialCMap again by the different; distinct color
+            vf.DiffColorMap = ColorQuantizer.SortByDifference(vf.initialCMap);   //sort intialCMap again by the different; distinct color
             //Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);   //sort intialCMap by hue
-            var a = ColorQuantizer.TranslateHSV(DiffColorMap[0]);
+            var a = ColorQuantizer.TranslateHSV(vf.DiffColorMap[0]);
             vf.domiHue = a[0];
             ////////////////////////////////////////////////////////////////////////end of color palette cod
 
-            double threshold = 5.0;
+            //double threshold = 5.0;
 
             int j2;
             vf.pix_data = new byte[ry, rx, 3];
-            vf.recreate_pix_data = new byte[ry, rx, 3];
+            //vf.recreate_pix_data = new byte[ry, rx, 3];
             for (int j = 0; j < ry; j++)
             {
                 j2 = ry - j - 1;

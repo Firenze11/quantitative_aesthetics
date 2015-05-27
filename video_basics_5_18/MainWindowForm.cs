@@ -127,15 +127,12 @@ namespace testmediasmall
             if (!loaded) return;
             
             GL.Viewport(0, 0, mediawin.Width, mediawin.Height); // Use all of the glControl painting area
-
-            Console.WriteLine("frame update on resize");
             UpdateFrame();
         }
 
         private void GLviewport_Paint(object sender, PaintEventArgs e)
         {
             if (!loaded) return;
-            Console.WriteLine("frame update on paint");
             UpdateFrame();
         }
 

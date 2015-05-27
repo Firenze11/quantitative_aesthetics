@@ -53,7 +53,7 @@ namespace testmediasmall
         //global control
         static bool checkVideo = false;
         static bool playbackmode = false;
-        public static bool multipleScreen = true;
+        public static bool multipleScreen = false;
         static int maxframes = 3000;
         static int minframes = 40;
 
@@ -83,7 +83,7 @@ namespace testmediasmall
         public static double deviation = 0.0;
 
         //computer setup
-        public bool Laptop = true;
+        public bool Laptop = false;
         
         public void Initialize()
         {
@@ -306,6 +306,7 @@ namespace testmediasmall
             dpoint = (lnorm + rnorm) * 0.5;
             dpoint.Y = (1.0 - dpoint.Y) * ry;
             dpoint.X = dpoint.X * rx;
+            if (!Laptop) { dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0); }
             gazeL.Add(dpoint);
             if (gazeL.Count > 30) { gazeL.RemoveAt(0); }
 
@@ -320,8 +321,6 @@ namespace testmediasmall
                 deviation = Math.Sqrt(deviation);
             }
 
-
-            if (!Laptop) { dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);}
         }
 
         void CreateScreens()

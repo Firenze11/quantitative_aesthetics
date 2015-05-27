@@ -18,7 +18,7 @@ namespace testmediasmall
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
 
-        public enum Mode { zoom, sequence, motion, pan, color}
+        public enum Mode { zoom, sequence, pan, color}
         public Mode mode = Mode.sequence;
 
         static double _rx = MediaWindow.rx;
@@ -33,7 +33,6 @@ namespace testmediasmall
         public byte[] gazeColor = new byte[3];
         Vector3d gazeOptFlowVector = new Vector3d(0.0, 0.0, 0.0);
         Vector3d gazeVector;
-        int lastf_motionPicture = 3;
         public int num;  //get mask number of the gaze
 
         //frame control
@@ -53,12 +52,6 @@ namespace testmediasmall
         int pancount = 0;
         static int panduration = 30;
         public int pandir = 0;
-
-        //motion control
-        public bool ismotion = false;
-        int motioncount = 0;
-        static int motionduration = 20;
-        static int motionStartF = 55;
 
         //zoom control
         public bool iszooming = false;
@@ -147,6 +140,13 @@ namespace testmediasmall
             return ag;
         }
 
+        private void ChangeMode()
+        {
+            Array values = Enum.GetValues(typeof(Mode));
+            Random random = new Random();
+            mode = (Mode)values.GetValue(random.Next(values.Length));
+        }
+
         private void CalculateGazeProperty(Vector3d gazeInput)///need modify
         {
             //projected gaze
@@ -167,16 +167,6 @@ namespace testmediasmall
             else if (projG.X > 0.75 * w) { num = 2; }
             else { num = 0; }
 
-            ////gaze medium
-            //if (gazeL.Count >= lastf_gazeMedium)
-            //{
-            //    projGM = new Vector3d(0.0, 0.0, 0.0);
-            //    deviation = 0;
-            //    for (int i = 0; i < lastf_gazeMedium; i++) { projGM += gazeL[gazeL.Count - i - 1]; }
-            //    projGM *= (1.0 / lastf_gazeMedium);
-            //    for (int i = 0; i < lastf_gazeMedium; i++) { deviation += (gazeL[gazeL.Count - i - 1] - projGM).LengthSquared; } //"standard dev"
-            //    deviation = Math.Sqrt(deviation);
-            //}
             projGM = ProjectedGaze(MediaWindow.gazeMedium);
             deviation = MediaWindow.deviation;
 
@@ -188,18 +178,7 @@ namespace testmediasmall
             gazeColor[0] = (byte)(vbit.Pixels[(int)projG.Y, (int)projG.X].R * 255.0);
             gazeColor[1] = (byte)(vbit.Pixels[(int)projG.Y, (int)projG.X].G * 255.0);
             gazeColor[2] = (byte)(vbit.Pixels[(int)projG.Y, (int)projG.X].B * 255.0);
-
             ///////////////////////////////////////////////////////////////////////gaze motion, gaze etc... too
-            //gaze vector
-            if (gazeL.Count >= lastf_motionPicture)////NOT FINISHED
-            {
-                for (int i = 0; i < lastf_motionPicture; i++)
-                {
-                    gazeVector = gazeL[gazeL.Count - 1] - gazeL[gazeL.Count - i - 1];
-                    double gaze_delta = (gazeL[gazeL.Count - 1] - gazeL[gazeL.Count - i - 1]).Length;
-                }
-            }
-            //gaze optical flow////NOT FINISHED
         }
 
         private void DoZoom()
@@ -216,6 +195,7 @@ namespace testmediasmall
                     threshold = 0;
                     iscolor = false;
                     gazeRadius = 0.0;
+                    ChangeMode();
                     Console.WriteLine(id + " stops zooming, cf = " + cframe);
                     return;
                 }
@@ -261,6 +241,7 @@ namespace testmediasmall
                 {
                     ispanning = false;
                     framecount = 0;
+                    ChangeMode();
                     Console.WriteLine(id + " stops panning");
                 }
                 else
@@ -287,23 +268,6 @@ namespace testmediasmall
                     pancount = 0;
                     Console.WriteLine(id + " is panning, cframe = " + cframe + " pandir = " + pandir);
                 }
-            }
-        }
-        private void DoMotion()
-        {
-            if (ismotion) //post fixation period lasts for zoomduration frames
-            {
-                if (motioncount >= motionduration)
-                {
-                    ismotion = false;
-                    return;
-                }
-                motioncount++;
-            }
-            else if (cframe > motionStartF) //any condition that triggers motion mode, maybe gaze optical flow....
-            {
-                ismotion = true;//when one screen itself is in motion mode, it can't trigger other screen's motin mode
-                motioncount = 0;
             }
         }
         void DoSequence()
@@ -346,6 +310,7 @@ namespace testmediasmall
                 }
                 issequencing = false;
                 framecount = 0;
+                ChangeMode();
                 Console.Write("sequence end, cf = ");
                 for (int i = 0; i < MediaWindow.screenCount; i++)
                 {
@@ -459,6 +424,7 @@ namespace testmediasmall
                     framecount = 0;
                     gazeRadius = 0.0;
                     threshold = 0;
+                    ChangeMode();
                     return;
                 }
                 if (deviation > 40)
@@ -478,7 +444,6 @@ namespace testmediasmall
                 colorcount = 0;
                 threshold = 0;
                 newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, false);
-                Console.WriteLine(id);
             }
             else 
             { 
@@ -663,7 +628,6 @@ namespace testmediasmall
             bool islookedat = IsLookedAt(gazeInput);
             if (islookedat) {CalculateGazeProperty(gazeInput);}
             if (mode == Mode.zoom) DoZoom();
-            if (mode == Mode.motion) DoMotion();
             if (mode == Mode.sequence) DoSequence();
             if (mode == Mode.pan) DoPan();
             if (mode == Mode.color) DoColor();

@@ -19,7 +19,7 @@ namespace testmediasmall
         VBitmap vbit;
 
         public enum Mode { zoom, sequence, motion, pan, color}
-        public Mode mode = Mode.zoom;
+        public Mode mode = Mode.color;
 
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
@@ -73,7 +73,7 @@ namespace testmediasmall
         int colorcount = 0;
         static int colorduration = 50; 
         public int threshold = 0;
-        double gazeRadius = 0.0;
+        double gazeRadius = 100.0;
         
         //fade control
         public bool isfading = false;
@@ -215,9 +215,7 @@ namespace testmediasmall
                     zoomcount = 0;
                     framecount = 0;
                     isfading = false;
-                    threshold = 0;
                     iscolor = false;
-                    gazeRadius = 0.0;
                     Console.WriteLine(id + " stops zooming, cf = " + cframe);
                     return;
                 }
@@ -230,7 +228,6 @@ namespace testmediasmall
                     cframeSmooth = newFrame;
                     Console.WriteLine(id + " is fading, pf = " + pframe +", cf = " + cframe);
                     iscolor = false;
-                    gazeRadius = 0.0;
                     fadecount = 0;
                 }
                 zoomcount++;
@@ -240,7 +237,6 @@ namespace testmediasmall
             {
                 projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
                 MediaWindow.Screens[next(id)].ison = true;
-
                 iszooming = true;
                 zoomcount = 0;
                 pframe = cframe; ///Frame reassignments
@@ -423,8 +419,10 @@ namespace testmediasmall
                     iscolor = false;
                     colorcount = 0;
                     framecount = 0;
-                    gazeRadius = 0.0;
+                    gazeRadius = 100.0;
                     threshold = 0;
+                    cframe = newFrame;
+                    cframeSmooth = newFrame;
                     return;
                 }
                 if (deviation > 40)
@@ -557,6 +555,9 @@ namespace testmediasmall
                                         }
                                     }
                                 }
+                                recreate_pix_data[j, i, 2] = vf.DiffColorMap[minId].R;
+                                recreate_pix_data[j, i, 1] = vf.DiffColorMap[minId].G;
+                                recreate_pix_data[j, i, 0] = vf.DiffColorMap[minId].B;
                             }
                             else
                             {
@@ -590,12 +591,55 @@ namespace testmediasmall
                             recreate_pix_data[j, i, 0] = vf.pix_data[j, i, 0];
                         }
                     }
-                    //else
-                    //{
-                    //    recreate_pix_data[j, i, 2] = vf.pix_data[j, i, 2];
-                    //    recreate_pix_data[j, i, 1] = vf.pix_data[j, i, 1];
-                    //    recreate_pix_data[j, i, 0] = vf.pix_data[j, i, 0];
-                    //}
+                }
+            }
+            return recreate_pix_data;
+        }
+
+        byte[, ,] RecreateGazeColorInward(VFrame vf, double threshold)
+        {
+            
+byte[, ,] recreate_pix_data = new byte[MediaWindow.ry, MediaWindow.rx, 3];
+
+            for (int j = 0; j < MediaWindow.ry; j++)
+            {
+                for (int i = 0; i < MediaWindow.rx; i++)
+                {
+                    double min = 442.0;
+                    int minId = 0;
+
+                    if ((i - MediaWindow.dpoint.X) * (i - MediaWindow.dpoint.X) + (j - MediaWindow.dpoint.Y) * (j - MediaWindow.dpoint.Y) < gazeRadius * gazeRadius)
+                    //if ((i - ActualGaze(projF).X) * (i - ActualGaze(projF).X) + (j - ActualGaze(projF).Y) * (j - ActualGaze(projF).Y) < gazeRadius * gazeRadius) //projF                    
+                    //if (Math.Abs(i - MediaWindow.dpoint.X) < gazeRadius && Math.Abs(j - MediaWindow.dpoint.Y) < gazeRadius)   //square
+                    {
+                        for (int k = 0; k < vf.DiffColorMap.Count; k++)
+                        {
+                            byte[] px_d = { vf.pix_data[j, i, 0], vf.pix_data[j, i, 1], vf.pix_data[j, i, 2] };
+                            double dist = ColorDist(px_d, vf.DiffColorMap[k]);
+                            if (dist < threshold)
+                            {
+                                minId = k;
+                                break;
+                            }
+                            else
+                            {
+                                if (dist < min)
+                                {
+                                    min = dist;
+                                    minId = k;
+                                }
+                            }
+                        }
+                        recreate_pix_data[j, i, 2] = vf.pix_data[j, i, 2];
+                        recreate_pix_data[j, i, 1] = vf.pix_data[j, i, 1];
+                        recreate_pix_data[j, i, 0] = vf.pix_data[j, i, 0];
+                    }
+                    else
+                    {
+                        recreate_pix_data[j, i, 2] = vf.DiffColorMap[minId].R;
+                        recreate_pix_data[j, i, 1] = vf.DiffColorMap[minId].G;
+                        recreate_pix_data[j, i, 0] = vf.DiffColorMap[minId].B;
+                    }
                 }
             }
             return recreate_pix_data;
@@ -658,12 +702,12 @@ namespace testmediasmall
                     //...............................................end for using projF
                     //draw the color change 
                     //px = RecreateScreenColor(MediaWindow.Vframe_repository[cframe], threshold, false);
-                    px = RecreateGazeColor(MediaWindow.Vframe_repository[cframe], threshold, false);
-                    if (threshold <= 300)
-                    {
+                    px = RecreateGazeColor(MediaWindow.Vframe_repository[cframe], threshold, true);
+                    //if (threshold <= 500)
+                    //{
                         threshold += 2;
-                    }
-                    gazeRadius += 5;
+                    //}
+                    gazeRadius += 10;
                 }
                 else 
                 { 
@@ -674,7 +718,7 @@ namespace testmediasmall
                         {
                             if (MediaWindow.multipleScreen)
                             { a = 1.0; }
-                            else { a = 0.3; }
+                            else { a = 0.34; }
                         }
                         //if (sequenceDir == "left")
                         //{

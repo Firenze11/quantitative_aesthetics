@@ -53,7 +53,7 @@ namespace testmediasmall
         //global control
         static bool checkVideo = false;
         static bool playbackmode = false;
-        public static bool multipleScreen = true;
+        public static bool multipleScreen = false;
         static int maxframes = 3000;
         static int minframes = 40;
 

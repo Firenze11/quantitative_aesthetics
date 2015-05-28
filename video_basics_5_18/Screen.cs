@@ -18,13 +18,8 @@ namespace testmediasmall
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
 
-<<<<<<< HEAD
-        public enum Mode { zoom, sequence, motion, pan, color}
-        public Mode mode = Mode.zoom;
-=======
         public enum Mode { zoom, sequence, pan, color}
-        public Mode mode = Mode.sequence;
->>>>>>> 58336b72bc4bf2cc11bb9852c8ca831518034553
+        public Mode mode = Mode.color;
 
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
@@ -69,7 +64,7 @@ namespace testmediasmall
         int colorcount = 0;
         static int colorduration = 50; 
         public int threshold = 0;
-        double gazeRadius = 100.0;
+        double gazeRadius = 0.0;
         
         //fade control
         public bool isfading = false;
@@ -149,7 +144,8 @@ namespace testmediasmall
         {
             Array values = Enum.GetValues(typeof(Mode));
             Random random = new Random();
-            mode = (Mode)values.GetValue(random.Next(values.Length));
+            //mode = (Mode)values.GetValue(random.Next(values.Length));
+            mode = Mode.color;
         }
 
         private void CalculateGazeProperty(Vector3d gazeInput)///need modify
@@ -198,11 +194,8 @@ namespace testmediasmall
                     framecount = 0;
                     isfading = false;
                     iscolor = false;
-<<<<<<< HEAD
-=======
                     gazeRadius = 0.0;
                     ChangeMode();
->>>>>>> 58336b72bc4bf2cc11bb9852c8ca831518034553
                     Console.WriteLine(id + " stops zooming, cf = " + cframe);
                     return;
                 }
@@ -230,7 +223,8 @@ namespace testmediasmall
                 //DoColor();
                 
                 //choose which scene to show (just remember it for now, show it later)
-                newFrame = MediaWindow.maskAvgRGBTransition(cframe, num,gazeColor, true);
+                newFrame = MediaWindow.domiHueTransition(cframe, true);
+                //newFrame = MediaWindow.maskAvgRGBTransition(cframe, num,gazeColor, true);
                 Console.WriteLine(id + " cf = " + cframe + ", newframe = " + newFrame);
             }
             else
@@ -419,7 +413,8 @@ namespace testmediasmall
             }
         }
 
-        void DoColor() {
+        void DoColor() 
+        {
             if (iscolor)
             {
                 if (colorcount >= colorduration)
@@ -427,14 +422,12 @@ namespace testmediasmall
                     iscolor = false;
                     colorcount = 0;
                     framecount = 0;
-                    gazeRadius = 100.0;
+                    gazeRadius = 0.0;
                     threshold = 0;
-<<<<<<< HEAD
                     cframe = newFrame;
                     cframeSmooth = newFrame;
-=======
+                    
                     ChangeMode();
->>>>>>> 58336b72bc4bf2cc11bb9852c8ca831518034553
                     return;
                 }
                 if (deviation > 40)
@@ -453,11 +446,10 @@ namespace testmediasmall
                 iscolor = true;
                 colorcount = 0;
                 threshold = 0;
-                newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, false);
-<<<<<<< HEAD
+                //newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, false);
+                newFrame = MediaWindow.domiHueTransition(cframe, true);
+                
                 Console.WriteLine(id + " cf = " + cframe +", newframe = " + newFrame);
-=======
->>>>>>> 58336b72bc4bf2cc11bb9852c8ca831518034553
             }
             else 
             { 
@@ -719,9 +711,9 @@ byte[, ,] recreate_pix_data = new byte[MediaWindow.ry, MediaWindow.rx, 3];
                     px = RecreateGazeColor(MediaWindow.Vframe_repository[cframe], threshold, true);
                     //if (threshold <= 500)
                     //{
-                        threshold += 2;
+                        threshold += 2 * (int) Math.Sqrt(colorcount);
                     //}
-                    gazeRadius += 10;
+                    gazeRadius += 0.25 * colorcount* colorcount;
                 }
                 else 
                 { 

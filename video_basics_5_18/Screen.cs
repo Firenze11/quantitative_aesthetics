@@ -17,14 +17,8 @@ namespace testmediasmall
         public int id;
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
-
-<<<<<<< HEAD
-        public enum Mode { zoom, sequence, motion, pan, color}
-        public Mode mode = Mode.zoom;
-=======
         public enum Mode { zoom, sequence, pan, color}
         public Mode mode = Mode.sequence;
->>>>>>> 58336b72bc4bf2cc11bb9852c8ca831518034553
 
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
@@ -198,11 +192,9 @@ namespace testmediasmall
                     framecount = 0;
                     isfading = false;
                     iscolor = false;
-<<<<<<< HEAD
-=======
+
                     gazeRadius = 0.0;
                     ChangeMode();
->>>>>>> 58336b72bc4bf2cc11bb9852c8ca831518034553
                     Console.WriteLine(id + " stops zooming, cf = " + cframe);
                     return;
                 }
@@ -336,13 +328,11 @@ namespace testmediasmall
                         }
                         else if (cframeSmooth <= sequenceStartF + (0.33333 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth -= 0.66667; //cframe will stop
-                            Console.WriteLine(id + "middle freeze");
+                            cframeSmooth -= 0.66667;//cframe will increase at 1/3 times of nomal rate
                         }
                         else //if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration)
                         {
                             cframeSmooth += 0.66667; //cframe will increase at 5/3 times of nomal rate
-                            Console.WriteLine(id +" is increasing at 2 times, cf = " + cframeSmooth);
                         }
                     }
                     if (id == 1)
@@ -353,21 +343,18 @@ namespace testmediasmall
                         }
                         else if (cframeSmooth <= sequenceStartF + (0.66667 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth -= 0.66667; //cframe will stop
-                            Console.WriteLine(id + "middle freeze");
+                            cframeSmooth -= 0.66667; 
                         }
                         else if (cframeSmooth >= sequenceStartF + (1.0 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth += 0.33333; //cframe will increase at 3/4 times of nomal rate
-                            Console.WriteLine(id + " is increasing at 1.5 times, cf = " + cframeSmooth);
+                            cframeSmooth += 0.33333; //cframe will increase at 4/3 times of nomal rate
                         }
                     }
                     if (id == 0)
                     {
                         if (cframeSmooth >= sequenceStartF + sequenceDuration && cframeSmooth <= sequenceStartF + (1.0 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth -= 0.66667; //cframe will stop
-                            Console.WriteLine(id + "middle freeze");
+                            cframeSmooth -= 0.66667; 
                         }
                     }
                 }
@@ -411,8 +398,7 @@ namespace testmediasmall
                     {
                         if (cframeSmooth >= sequenceStartF + sequenceDuration && cframeSmooth <= sequenceStartF + (1.0 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth -= 0.66667; //cframe will increase at two thirds of nomal rate
-                            Console.WriteLine(id + "middle freeze");
+                            cframeSmooth -= 0.66667;
                         }
                     }
                 }
@@ -429,12 +415,11 @@ namespace testmediasmall
                     framecount = 0;
                     gazeRadius = 100.0;
                     threshold = 0;
-<<<<<<< HEAD
                     cframe = newFrame;
                     cframeSmooth = newFrame;
-=======
+                    Console.WriteLine("color cframe, "+cframe);
+
                     ChangeMode();
->>>>>>> 58336b72bc4bf2cc11bb9852c8ca831518034553
                     return;
                 }
                 if (deviation > 40)
@@ -454,10 +439,8 @@ namespace testmediasmall
                 colorcount = 0;
                 threshold = 0;
                 newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, false);
-<<<<<<< HEAD
+
                 Console.WriteLine(id + " cf = " + cframe +", newframe = " + newFrame);
-=======
->>>>>>> 58336b72bc4bf2cc11bb9852c8ca831518034553
             }
             else 
             { 

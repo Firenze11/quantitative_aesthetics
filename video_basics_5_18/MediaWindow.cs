@@ -83,7 +83,7 @@ namespace testmediasmall
         public static double deviation = 0.0;
 
         //computer setup
-        public bool Laptop = true;
+        public bool Laptop = false;
         
         public void Initialize()
         {
@@ -173,18 +173,25 @@ namespace testmediasmall
         public static int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB, bool complementary)
         {
             int nf = 0;
-            float minColorQuality = 255;
-            float maxColorQuality = 0;
+            double minColorQuality = 255;
+            double maxColorQuality = 0;
 
-            byte colorQuality = gazeRGB.Max();
-            int colorQualityIndex = gazeRGB.ToList().IndexOf(colorQuality); //pick between redness, greenness, blueness for the gaze
+            byte cq = gazeRGB.Max();
+            int colorQualityIndex = gazeRGB.ToList().IndexOf(cq); //pick between rgb for the gaze
+            double colorQuality = (double)cq;
+            for (int i = 0; i < 3; i++)
+            {
+                if (i != colorQualityIndex) { colorQuality -= 0.5 * (double)gazeRGB[i]; }
+            }
+            colorQuality /= 255.0;
+            
 
             for (int i = 0; i < Vframe_repository.Count; i++)
             {
                 if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
                 {
-                    float frameColorQuality = Vframe_repository[i].maskAvgRGBColor[gazeMaskNum][colorQualityIndex];   //get colorQuality (red, blue, greenness) value in mask number matching the gaze
-                    float colorQualityDiff = Math.Abs(colorQuality - frameColorQuality);
+                    double frameColorQuality = Vframe_repository[i].maskAvgRGBColor[gazeMaskNum][colorQualityIndex];   //get colorQuality (red, blue, greenness) value in mask number matching the gaze
+                    double colorQualityDiff = Math.Abs(colorQuality - frameColorQuality);
 
                     if (complementary) //pick the frame with the least of the qualifier (redness, greenness, blueness)
                     {

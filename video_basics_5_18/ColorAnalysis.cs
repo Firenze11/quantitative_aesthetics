@@ -132,6 +132,7 @@ namespace testmediasmall
             motionMaskDir = new Vector2d[5];
             motionDir = new Vector2d();
             mask_pix_n = new int[5];
+            maskAvgRGBColor = new List<float[]>();
 
             //scan each pixel for rgb
             for (int j = 0; j < _ry; ++j)

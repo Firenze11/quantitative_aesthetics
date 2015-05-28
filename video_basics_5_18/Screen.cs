@@ -330,13 +330,11 @@ namespace testmediasmall
                         }
                         else if (cframeSmooth <= sequenceStartF + (0.33333 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth -= 0.66667; //cframe will stop
-                            Console.WriteLine(id + "middle freeze");
+                            cframeSmooth -= 0.66667;//cframe will increase at 1/3 times of nomal rate
                         }
                         else //if (cframeSmooth >= sequenceStartF + 0.33333 * sequenceDuration)
                         {
                             cframeSmooth += 0.66667; //cframe will increase at 5/3 times of nomal rate
-                            Console.WriteLine(id +" is increasing at 2 times, cf = " + cframeSmooth);
                         }
                     }
                     if (id == 1)
@@ -347,21 +345,18 @@ namespace testmediasmall
                         }
                         else if (cframeSmooth <= sequenceStartF + (0.66667 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth -= 0.66667; //cframe will stop
-                            Console.WriteLine(id + "middle freeze");
+                            cframeSmooth -= 0.66667; 
                         }
                         else if (cframeSmooth >= sequenceStartF + (1.0 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth += 0.33333; //cframe will increase at 3/4 times of nomal rate
-                            Console.WriteLine(id + " is increasing at 1.5 times, cf = " + cframeSmooth);
+                            cframeSmooth += 0.33333; //cframe will increase at 4/3 times of nomal rate
                         }
                     }
                     if (id == 0)
                     {
                         if (cframeSmooth >= sequenceStartF + sequenceDuration && cframeSmooth <= sequenceStartF + (1.0 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth -= 0.66667; //cframe will stop
-                            Console.WriteLine(id + "middle freeze");
+                            cframeSmooth -= 0.66667; 
                         }
                     }
                 }
@@ -405,8 +400,7 @@ namespace testmediasmall
                     {
                         if (cframeSmooth >= sequenceStartF + sequenceDuration && cframeSmooth <= sequenceStartF + (1.0 + sequenceDurExtention) * sequenceDuration)
                         {
-                            cframeSmooth -= 0.66667; //cframe will increase at two thirds of nomal rate
-                            Console.WriteLine(id + "middle freeze");
+                            cframeSmooth -= 0.66667;
                         }
                     }
                 }
@@ -426,7 +420,6 @@ namespace testmediasmall
                     threshold = 0;
                     cframe = newFrame;
                     cframeSmooth = newFrame;
-                    
                     ChangeMode();
                     return;
                 }
@@ -446,9 +439,9 @@ namespace testmediasmall
                 iscolor = true;
                 colorcount = 0;
                 threshold = 0;
-                //newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, false);
-                newFrame = MediaWindow.domiHueTransition(cframe, true);
-                
+                newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, false);
+                //newFrame = MediaWindow.domiHueTransition(cframe, true);
+
                 Console.WriteLine(id + " cf = " + cframe +", newframe = " + newFrame);
             }
             else 

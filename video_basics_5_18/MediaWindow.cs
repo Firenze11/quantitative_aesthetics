@@ -42,6 +42,9 @@ namespace testmediasmall
 
     public class MediaWindow
     {
+        int aaa = 0;
+        VBitmap vbit;
+
         //window property
         public static int rx = 0;
         public static int ry = 0;
@@ -54,7 +57,7 @@ namespace testmediasmall
         static bool checkVideo = false;
         static bool playbackmode = false;
         public static bool multipleScreen = false;
-        static int maxframes = 3000;
+        static int maxframes = 1500;
         static int minframes = 40;
 
         static int skippedFrameRange = 10;
@@ -373,7 +376,7 @@ namespace testmediasmall
         
         void PlayBack()
         {
-            Screen.framecount++; 
+            Screen.framecount++;
             for (int i = 0; i < Screens.Count; i++)
             {
                 Screens[i].OnTimeLapse(dpoint);
@@ -386,6 +389,13 @@ namespace testmediasmall
             {
                 if (Screens[i].ison) { Screens[i].DrawVbit(); }
             }
+            //aaa++;
+            //Console.WriteLine("aaa = "+aaa);
+            //byte[, ,] pre_px = Vframe_repository[aaa].pix_data;
+
+            //VBitmap Videoimage = new VBitmap(rx, ry);
+            //Videoimage.FromFrame(pre_px);
+            //Videoimage.Draw(0.0, 0.0, rx, ry, 1.0);
         }
 
         void VisualizeGaze()
@@ -506,11 +516,16 @@ namespace testmediasmall
                 if (Vframe_repository.Count <= maxframes) 
                 {
                     BuildVfRepo();
+                    Console.WriteLine("repoCount = " + Vframe_repository.Count );
                     if (Vframe_repository.Count > 1)
                     {
                         if (Vframe_repository[Vframe_repository.Count - 1].pix_data == Vframe_repository[Vframe_repository.Count - 2].pix_data)
                             Console.WriteLine("vf repeated");
                     }
+                }
+                else
+                {
+                    Console.WriteLine("THIS IS THE END OF MOVIE "+ Vframe_repository.Count );
                 }
             }
 

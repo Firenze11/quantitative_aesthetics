@@ -17,8 +17,8 @@ namespace testmediasmall
         public int id;
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
-        public enum Mode { zoom, sequence, pan, color}
-        public Mode mode = Mode.sequence;
+        public enum Mode { zoom, sequence, pan, color, none}
+        public Mode mode = Mode.none;
 
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;

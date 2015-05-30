@@ -17,6 +17,7 @@ namespace testmediasmall
         public int id;
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
+
         public enum Mode { zoom, sequence, pan, color, none}
         public Mode mode = Mode.none;
 
@@ -63,7 +64,7 @@ namespace testmediasmall
         int colorcount = 0;
         static int colorduration = 50; 
         public int threshold = 0;
-        double gazeRadius = 100.0;
+        double gazeRadius = 0.0;
         
         //fade control
         public bool isfading = false;
@@ -143,7 +144,8 @@ namespace testmediasmall
         {
             Array values = Enum.GetValues(typeof(Mode));
             Random random = new Random();
-            mode = (Mode)values.GetValue(random.Next(values.Length));
+            //mode = (Mode)values.GetValue(random.Next(values.Length));
+            mode = Mode.color;
         }
 
         private void CalculateGazeProperty(Vector3d gazeInput)///need modify
@@ -192,7 +194,6 @@ namespace testmediasmall
                     framecount = 0;
                     isfading = false;
                     iscolor = false;
-
                     gazeRadius = 0.0;
                     ChangeMode();
                     Console.WriteLine(id + " stops zooming, cf = " + cframe);
@@ -222,7 +223,8 @@ namespace testmediasmall
                 //DoColor();
                 
                 //choose which scene to show (just remember it for now, show it later)
-                newFrame = MediaWindow.maskAvgRGBTransition(cframe, num,gazeColor, true);
+                newFrame = MediaWindow.domiHueTransition(cframe, true);
+                //newFrame = MediaWindow.maskAvgRGBTransition(cframe, num,gazeColor, true);
                 Console.WriteLine(id + " cf = " + cframe + ", newframe = " + newFrame);
             }
             else
@@ -405,7 +407,8 @@ namespace testmediasmall
             }
         }
 
-        void DoColor() {
+        void DoColor() 
+        {
             if (iscolor)
             {
                 if (colorcount >= colorduration)
@@ -413,12 +416,10 @@ namespace testmediasmall
                     iscolor = false;
                     colorcount = 0;
                     framecount = 0;
-                    gazeRadius = 100.0;
+                    gazeRadius = 0.0;
                     threshold = 0;
                     cframe = newFrame;
                     cframeSmooth = newFrame;
-                    Console.WriteLine("color cframe, "+cframe);
-
                     ChangeMode();
                     return;
                 }
@@ -439,6 +440,7 @@ namespace testmediasmall
                 colorcount = 0;
                 threshold = 0;
                 newFrame = MediaWindow.maskAvgRGBTransition(cframe, num, gazeColor, false);
+                //newFrame = MediaWindow.domiHueTransition(cframe, true);
 
                 Console.WriteLine(id + " cf = " + cframe +", newframe = " + newFrame);
             }
@@ -702,9 +704,9 @@ byte[, ,] recreate_pix_data = new byte[MediaWindow.ry, MediaWindow.rx, 3];
                     px = RecreateGazeColor(MediaWindow.Vframe_repository[cframe], threshold, true);
                     //if (threshold <= 500)
                     //{
-                        threshold += 2;
+                        threshold += 2 * (int) Math.Sqrt(colorcount);
                     //}
-                    gazeRadius += 10;
+                    gazeRadius += 0.25 * colorcount* colorcount;
                 }
                 else 
                 { 

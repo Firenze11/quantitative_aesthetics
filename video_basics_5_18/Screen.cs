@@ -18,8 +18,8 @@ namespace testmediasmall
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
         VBitmap vbit;
 
-        public enum Mode { zoom, sequence, pan, color}
-        public Mode mode = Mode.color;
+        public enum Mode { zoom, sequence, pan, color }
+        public Mode mode = Mode.sequence;
 
         static double _rx = MediaWindow.rx;
         static double _ry = MediaWindow.ry;
@@ -62,7 +62,7 @@ namespace testmediasmall
         //color control
         public bool iscolor = false;
         int colorcount = 0;
-        static int colorduration = 50; 
+        static int colorduration = 40; 
         public int threshold = 0;
         double gazeRadius = 0.0;
         
@@ -271,7 +271,7 @@ namespace testmediasmall
         }
         void DoSequence()
         {
-            if (MediaWindow.gazeL.Count < 1) return;
+            if (MediaWindow.gazeL.Count < 2) return;
             Vector3d p1 = MediaWindow.gazeL[MediaWindow.gazeL.Count - 1];
             Vector3d p0 = MediaWindow.gazeL[MediaWindow.gazeL.Count - 2];
             if (!issequencing)

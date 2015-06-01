@@ -86,7 +86,7 @@ namespace testmediasmall
         public static double deviation = 0.0;
 
         //computer setup
-        public bool Laptop = false;
+        public bool Laptop = true;
         
         public void Initialize()
         {
@@ -100,19 +100,19 @@ namespace testmediasmall
                 Console.WriteLine(e);
             }
             VideoIN.EnumCaptureDevices();
-            //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
-            if (Laptop)
-            {
-                CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
-                Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
-                //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
-                //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
-            }
-            else
-            {
-                CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi");
-                Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
-            }
+            Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
+            //if (Laptop)
+            //{
+            //    CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
+            //    Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
+            //    //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
+            //    //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
+            //}
+            //else
+            //{
+            //    CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi");
+            //    Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
+            //}
 
             System.Threading.Thread.Sleep(2000);
             Video.SetResolution(360, 240);   //reduce resolution so that each frame is taken into the repository
@@ -172,7 +172,6 @@ namespace testmediasmall
             return nf;
         }
 
-        //not used
         public static int maskAvgRGBTransition(int analyzedFrame, int gazeMaskNum, byte[] gazeRGB, bool complementary)
         {
             int nf = 0;
@@ -213,6 +212,24 @@ namespace testmediasmall
             }
             return nf;
         }
+
+        //public static IEnumerable<IEnumerable<T>> Chunk<T>(this IEnumerable<T> source, int chunksize)
+        //{
+        //    while (source.Any())
+        //    {
+        //        yield return source.Take(chunksize);
+        //        source = source.Skip(chunksize);
+        //    }
+        //    if (chunksize <= 0) throw new ArgumentException("Chunk size must be greater than zero.", "chunksize");
+        //}
+
+        //void int[] ShowMultipleFrames()
+        //{
+        //    int transitionFrame = Vframe_repository.Count;
+        //    List<List<VFrame>> SplitRepository = Chunk<VFrame>(Vframe_repository, 2);
+
+        //}
+        //not used
         public static int maskOpticalFlowTransition(int analyzedFrame, int gazeMaskNum, double gazeOptFlowMovement, Vector3d gazeOptFlowVector, bool complementary)
         {
             int nf = 0;

@@ -27,6 +27,7 @@ namespace testmediasmall
         public List<float[]> maskAvgRGBColor;
         public double totalMovement = 0.0;
         public double domiHue = 0.0;
+        public double distHue = 0.0;
         public Colormap initialCMap; 
         public Colormap DiffColorMap; 
         public RGBHisto HistoR;
@@ -100,19 +101,19 @@ namespace testmediasmall
                 Console.WriteLine(e);
             }
             VideoIN.EnumCaptureDevices();
-            Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
-            //if (Laptop)
-            //{
-            //    CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
-            //    Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
-            //    //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
-            //    //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
-            //}
-            //else
-            //{
-            //    CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi");
-            //    Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
-            //}
+            //Video.StartCamera(VideoIN.CaptureDevices[0], 160, 120);
+            if (Laptop)
+            {
+                CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
+                Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
+                //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
+                //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
+            }
+            else
+            {
+                CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi");
+                Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
+            }
 
             System.Threading.Thread.Sleep(2000);
             Video.SetResolution(360, 240);   //reduce resolution so that each frame is taken into the repository
@@ -330,10 +331,12 @@ namespace testmediasmall
                                               EyeTracker.EyeLeftSmooth.GazePositionScreenNorm.Y, 0.0);
             Vector3d rnorm = new Vector3d(EyeTracker.EyeRightSmooth.GazePositionScreenNorm.X,
                                           EyeTracker.EyeRightSmooth.GazePositionScreenNorm.Y, 0.0);
-            dpoint = (lnorm + rnorm) * 0.5;
-            dpoint.Y = (1.0 - dpoint.Y) * ry;
-            dpoint.X = dpoint.X * rx;
-            if (!Laptop) { dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0); }
+            //dpoint = (lnorm + rnorm) * 0.5;
+            //dpoint.Y = (1.0 - dpoint.Y) * ry;
+            //dpoint.X = dpoint.X * rx;
+            //if (!Laptop) { 
+                dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0); 
+            //}
             gazeL.Add(dpoint);
             if (gazeL.Count > 30) { gazeL.RemoveAt(0); }
 
@@ -347,10 +350,9 @@ namespace testmediasmall
                 for (int i = 0; i < lastf_gazeMedium; i++) { deviation += (gazeL[gazeL.Count - i - 1] - gazeMedium).LengthSquared; } //"standard dev"
                 deviation = Math.Sqrt(deviation);
             }
-
         }
 
-        void CreateScreens()
+        public static void CreateScreens()
         {
             if (Video.IsVideoCapturing && Screens.Count == 0)
             {
@@ -421,7 +423,7 @@ namespace testmediasmall
             double startFade_gaze = 20;
             GL.PointSize((float)(rx / 15));
             if (frameNumber > minframes - startFade_gaze) { GL.Color4(255.0 / 255.0, 165.0 / 255.0, 0.0, alpha_gaze * Math.Cos((minframes - frameNumber) / minframes) * 60 * Math.PI); }
-            else { GL.Color4(255.0 / 255.0, 100.0 / 255.0, 0.0, alpha_gaze); }
+            else { GL.Color4(255.0 / 255.0, 0.0, 0.0, alpha_gaze); }
             GL.Begin(PrimitiveType.Points);
             GL.Vertex2(dpoint.X, dpoint.Y);
             //GL.Vertex2(CV.motionCentroid.X , CV.motionCentroid.Y);    //motion centroid check
@@ -447,8 +449,10 @@ namespace testmediasmall
             //Colormap initialCMap = ColorQuantizer.MedianCutQuantGeneral(vf, rx, ry, 16);    //sort by frequency
             vf.DiffColorMap = ColorQuantizer.SortByDifference(vf.initialCMap);   //sort intialCMap again by the different; distinct color
             //Colormap HueColorMap = ColorQuantizer.SortByHue(initialCMap);   //sort intialCMap by hue
-            var a = ColorQuantizer.TranslateHSV(vf.DiffColorMap[0]);
-            vf.domiHue = a[0];
+            var domiColor = ColorQuantizer.TranslateHSV(vf.initialCMap[0]); //get HSV
+            var distColor = ColorQuantizer.TranslateHSV(vf.DiffColorMap[0]);
+            vf.domiHue = domiColor[0];  //extract just H
+            vf.distHue = distColor[0];
             ////////////////////////////////////////////////////////////////////////end of color palette cod
 
             //double threshold = 5.0;
@@ -514,8 +518,18 @@ namespace testmediasmall
             }
         }
 
+        //public void VisualizeAnalysisModes() {
+        //    int modes = 3;
+        //    if (frameNumber / (modes + 1) < 2) 
+        //    { 
+        //        CV.DrawHisto(rx, ry);
+        //        Console.WriteLine("true");
+        //    }  
+        //}
+
         public void OnFrameUpdate()  //executed 20d times per second.
         {
+            
             GL.ClearColor(0.0f, 0.6f, 0.6f, 1.0f);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             GL.MatrixMode(MatrixMode.Projection);
@@ -533,7 +547,7 @@ namespace testmediasmall
                 if (Vframe_repository.Count <= maxframes) 
                 {
                     BuildVfRepo();
-                    Console.WriteLine("repoCount = " + Vframe_repository.Count );
+                    //Console.WriteLine("repoCount = " + Vframe_repository.Count );
                     if (Vframe_repository.Count > 1)
                     {
                         if (Vframe_repository[Vframe_repository.Count - 1].pix_data == Vframe_repository[Vframe_repository.Count - 2].pix_data)
@@ -542,7 +556,7 @@ namespace testmediasmall
                 }
                 else
                 {
-                    Console.WriteLine("THIS IS THE END OF MOVIE "+ Vframe_repository.Count );
+                    //Console.WriteLine("THIS IS THE END OF MOVIE "+ Vframe_repository.Count );
                 }
             }
 
@@ -556,7 +570,7 @@ namespace testmediasmall
                 {
                     Screens[i].ison = true;
                 }
-                Console.WriteLine("playing back, VFR.C = " + Vframe_repository.Count);
+                //Console.WriteLine("playing back, VFR.C = " + Vframe_repository.Count);
             }
             if (playbackmode)
 			{
@@ -571,6 +585,8 @@ namespace testmediasmall
                 else { DrawFullScreen (CalibrationVideo); }
                 CalculateGaze();
                 VisualizeGaze();
+                
+                //VisualizeAnalysisModes();
             }
         }
     }

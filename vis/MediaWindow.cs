@@ -86,7 +86,7 @@ namespace testmediasmall
         public static double deviation = 0.0;
 
         //computer setup
-        public bool Laptop = false;
+        public bool Laptop = true;
         
         public void Initialize()
         {

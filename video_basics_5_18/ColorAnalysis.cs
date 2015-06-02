@@ -207,7 +207,7 @@ namespace testmediasmall
             }
         }
 
-        void DrawHisto(int _rx, int _ry)
+        public void DrawHisto(int _rx, int _ry)
         {
             //render histogram on screen
             GL.MatrixMode(MatrixMode.Projection);
@@ -241,14 +241,6 @@ namespace testmediasmall
                 }
                 GL.End();
 
-                GL.Color4(1.0, 0.0, 1.0, 1.0);
-                GL.Begin(PrimitiveType.LineStrip);
-                /*for (int i = 0; i < HistSA.Length; ++i)
-                {
-                    GL.Vertex2(i, 10.0 + HistSA[i] + rx * rx / (masks.Count) * m);
-                }
-                GL.End();
-                */
             }
         }
 

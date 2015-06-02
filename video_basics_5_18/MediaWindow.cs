@@ -548,6 +548,7 @@ namespace testmediasmall
                 {
                     BuildVfRepo();
                     //Console.WriteLine("repoCount = " + Vframe_repository.Count );
+
                     if (Vframe_repository.Count > 1)
                     {
                         if (Vframe_repository[Vframe_repository.Count - 1].pix_data == Vframe_repository[Vframe_repository.Count - 2].pix_data)

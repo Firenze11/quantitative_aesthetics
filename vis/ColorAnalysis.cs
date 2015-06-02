@@ -254,7 +254,7 @@ namespace testmediasmall
 
         void CalculateHisto()
         {
-            for (int j = 0; j < masks.Count; ++j)
+            for (int j = 5; j < masks.Count; ++j)
             {
                 histo_writer.Write("mask" + j + ",");
                 HistoRA = HistoR.CalculateRGBHistogram(imgR, masks[j]);

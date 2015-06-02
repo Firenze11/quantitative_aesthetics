@@ -107,14 +107,14 @@ namespace testmediasmall
             if (Laptop)
             {
                 CalibrationVideo.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\countdown.avi");
-                Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
-                //Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
+                //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\birdman3_converted.avi");
+                Video.StartVideoFile(@"C:\Users\anakano\Dropbox\__QuantitativeShare\final\inception.avi");
                 //Video.StartVideoFile(@"C:\Users\anakano\Documents\Classes\GSD6432\Final_Project\videos\Chungking_Express\Chungking_Express_converted.avi");
             }
             else
             {
                 CalibrationVideo.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\countdown.avi");
-                Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\birdman3.avi");
+                Video.StartVideoFile(@"C:\Users\anakano.WIN.000\Desktop\gsd6432\inception.avi");
             }
 
             System.Threading.Thread.Sleep(2000);
@@ -127,20 +127,10 @@ namespace testmediasmall
             EyeTracker.ShutDown(); 
             Video.Stop();
             CalibrationVideo.Stop();
+            //sw.Close();
+            sr.Close();
         }
-
-        private static int sorter(VFrame a, VFrame b)
-        {
-            //return a.avgr.CompareTo(b.avgr);
-            //return a.avgg.CompareTo(b.avgg);
-            //return a.avgb.CompareTo(b.avgb);
-            //return a.totalMovement.CompareTo(b.totalMovement);
-            return a.domiHue.CompareTo(b.domiHue);
-            //double aa = a.domiHue + a.totalMovement*0.1;
-            //double bb = b.domiHue + b.totalMovement*0.1;
-            //return aa.CompareTo(bb);
-        }
-
+        
         public static int domiHueTransition(int analyzedFrame, bool complementary)
         {
             int nf = 0;
@@ -214,87 +204,6 @@ namespace testmediasmall
                     }
                 }
             }
-            return nf;
-        }
-        public static int maskOpticalFlowTransition(int analyzedFrame, int gazeMaskNum, double gazeOptFlowMovement, Vector3d gazeOptFlowVector, bool complementary)
-        {
-            int nf = 0;
-            //double minTotalMovement = 100000;
-            //double maxTotalMovement = 0;
-            //double optFlowAngleDiff = 0.0;
-            //double totalMovementDiff = 0.0;
-
-            //for (int i = 0; i < Vframe_repository.Count; i++)
-            //{
-            //    if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
-            //    {
-            //        Vector3d gazeAngle = gazeOptFlowVector.Normalized();
-            //        Vector3d newFrameAngleVector = Vframe_repository[i].maskOpticalFlowVector[gazeMaskNum].Normalized();
-
-            //        totalMovementDiff = Math.Abs(gazeOptFlowMovement - Vframe_repository[i].maskOpticalFlowMovement[gazeMaskNum]);
-            //        optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, newFrameAngleVector);    //1 if parallel
-
-            //        if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be ~ +/- 30 degree
-            //        {
-            //            if (complementary) //show still image if lots of movement, etc 
-            //            {
-            //                if (totalMovementDiff > maxTotalMovement)
-            //                {
-            //                    maxTotalMovement = totalMovementDiff;
-            //                    nf = i;
-            //                }
-            //            }
-            //            else if (totalMovementDiff < minTotalMovement)
-            //            {
-            //                minTotalMovement = totalMovementDiff;
-            //                nf = i;
-            //            }
-            //        }
-            //        else if (Math.Abs(optFlowAngleDiff) > 0.5) //angle difference should be ~ +/- 30 degree
-            //        {
-            //            if (complementary) //show still image if lots of movement, etc 
-            //            {
-            //                if (totalMovementDiff > maxTotalMovement)
-            //                {
-            //                    maxTotalMovement = totalMovementDiff;
-            //                    nf = i;
-            //                }
-            //            }
-            //            else if (totalMovementDiff < minTotalMovement)
-            //            {
-            //                minTotalMovement = totalMovementDiff;
-            //                nf = i;
-            //            }
-            //        }
-            //        else nf = analyzedFrame; // no other frame matches then don't switch scenes
-            //    }
-            //}
-            return nf;
-        }
-        public static int motionPictureWithGaze(int analyzedFrame)
-        {
-            int nf = 0;
-            //double minTotalMovement = 100000;
-            //double optFlowAngleDiff = 0.0;
-            //double totalMovementDiff = 0.0;
-
-            //for (int i = 0; i < Vframe_repository.Count; i++)
-            //{
-            //    if (i > analyzedFrame + skippedFrameRange || i < analyzedFrame - skippedFrameRange) //skip the analyzed frame 
-            //    {
-            //        optFlowAngleDiff = Vector3d.Dot(gazeOptFlowVector, Vframe_repository[i].optFlowAngle);    //1 if parallel
-            //        totalMovementDiff = Math.Abs(Vframe_repository[analyzedFrame].totalMovement - Vframe_repository[i].totalMovement);
-
-            //        if (Math.Abs(optFlowAngleDiff) > 0.9) //angle difference should be within +/- 30 degree
-            //        {
-            //            if (totalMovementDiff < minTotalMovement)
-            //            {
-            //                minTotalMovement = totalMovementDiff;
-            //                nf = i;
-            //            }
-            //        }
-            //    }
-            //}
             return nf;
         }
         //end of not used
@@ -403,7 +312,7 @@ namespace testmediasmall
             //Videoimage.Draw(0.0, 0.0, rx, ry, 1.0);
         }
 
-        void VisualizeGaze()
+        void VisualizeGaze(Vector2d p)
         {
             double alpha_gaze = 0.8;
             double startFade_gaze = 20;
@@ -411,7 +320,7 @@ namespace testmediasmall
             if (frameNumber > minframes - startFade_gaze) { GL.Color4(255.0 / 255.0, 165.0 / 255.0, 0.0, alpha_gaze * Math.Cos((minframes - frameNumber) / minframes) * 60 * Math.PI); }
             else { GL.Color4(255.0 / 255.0, 100.0 / 255.0, 0.0, alpha_gaze); }
             GL.Begin(PrimitiveType.Points);
-            GL.Vertex2(dpoint.X, dpoint.Y);
+            GL.Vertex2(p.X, p.Y);
             //GL.Vertex2(CV.motionCentroid.X , CV.motionCentroid.Y);    //motion centroid check
             GL.End();
         }
@@ -433,7 +342,7 @@ namespace testmediasmall
             vf.DiffColorMap = diffColorMap;
             var a = ColorQuantizer.TranslateHSV(vf.DiffColorMap[0]);
             vf.domiHue = a[0];
-            //double threshold = 5.0;
+            //double threshold = 5.0; 
 
             int j2;
             vf.pix_data = new byte[ry, rx, 3];
@@ -558,15 +467,16 @@ namespace testmediasmall
                 CalculateGaze();
 
                 //visualize video property data
-                bool visMotion = true;
+                bool visMotion = false;
                 bool visColor = false;
                 bool visHisto = false;
+                bool recordGaze = true;
+                bool visGaze = false;
                 if (visMotion) { VisualizeMotion(); }
                 if (visColor) { VisualizeColor(); }
                 if (visHisto) { VisualizeHisto(); }
-
-                VisualizeGaze();
-
+                if (recordGaze) { checkVideo = true;  RecordGaze(); }
+                if (visGaze && !recordGaze) { ReadAndVisualizeGaze(); }
             }
         }
         
@@ -746,6 +656,28 @@ namespace testmediasmall
                 GL.Vertex2(i * 30.0, (double)CV.HistoBA[i] / 500.0);
             }
             GL.End();
+        }
+
+        StreamWriter sw = new StreamWriter("gaze.csv");
+        void RecordGaze()
+        {
+            if (Vframe_repository.Count > maxframes) { return; }
+            sw.WriteLine(Vframe_repository.Count + "," + dpoint.X + "," + dpoint.Y);
+        }
+
+        StreamReader sr = new StreamReader("gazeread.csv");
+        List<Vector2d> readL= new List<Vector2d>();
+        void ReadAndVisualizeGaze()
+        {
+            if (readL.Count == 0)
+            {
+                while (!sr.EndOfStream)
+                {
+                    string[] values = sr.ReadLine().Split(',');
+                    readL.Add(new Vector2d(Double.Parse(values[1]), Double.Parse(values[2])));
+                }
+            }
+            VisualizeGaze(readL[Vframe_repository.Count - 1]);
         }
     }
 }

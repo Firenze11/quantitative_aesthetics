@@ -468,10 +468,10 @@ namespace testmediasmall
 
                 //visualize video property data
                 bool visMotion = false;
-                bool visColor = false;
+                bool visColor = true;
                 bool visHisto = false;
-                bool recordGaze = true;
-                bool visGaze = false;
+                bool recordGaze = false;
+                bool visGaze = true;
                 if (visMotion) { VisualizeMotion(); }
                 if (visColor) { VisualizeColor(); }
                 if (visHisto) { VisualizeHisto(); }

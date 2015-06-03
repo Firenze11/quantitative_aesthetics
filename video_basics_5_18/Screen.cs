@@ -62,10 +62,12 @@ namespace testmediasmall
         //color control
         public bool iscolor = false;
         int colorcount = 0;
-        static int colorduration = 10; 
+        static int colorduration = 30; 
         public int threshold = 0;
         double gazeRadius = 0.0;
-        public bool ischoosingframe = false;
+        static bool ischoosingframe = false;
+        int choosingFcount = 0;
+        int choosingFduration = 20;
 
         //fade control
         public bool isfading = false;
@@ -141,12 +143,12 @@ namespace testmediasmall
             return ag;
         }
 
-        private void ChangeMode()
+        private void ChangeMode(Mode modeType)
         {
             Array values = Enum.GetValues(typeof(Mode));
             Random random = new Random();
             //mode = (Mode)values.GetValue(random.Next(values.Length));
-            mode = Mode.color;
+            //mode = Mode.zoom;
         }
 
         private void CalculateGazeProperty(Vector3d gazeInput)///need modify
@@ -183,8 +185,50 @@ namespace testmediasmall
             ///////////////////////////////////////////////////////////////////////gaze motion, gaze etc... too
         }
 
+        private void ResizeScreen(bool toThree) 
+        {
+            for (int i = 0; i < MediaWindow.screenCount; i++)
+            {
+                if (toThree)
+                {
+                    MediaWindow.Screens[i].left = (double)i * (double)MediaWindow.rx / (double)MediaWindow.screenCount;
+                    MediaWindow.Screens[i].bottom = 0.0;
+                    MediaWindow.Screens[i].w = (double)MediaWindow.rx / (double)MediaWindow.screenCount;
+                    MediaWindow.Screens[i].h = (double)MediaWindow.ry;
+
+                    MediaWindow.Screens[i].tx0 = (double)i / (double)MediaWindow.screenCount;
+                    MediaWindow.Screens[i].tx1 = ((double)i + 1.0) / (double)MediaWindow.screenCount;
+                    MediaWindow.Screens[i].ty0 = 0.0;
+                    MediaWindow.Screens[i].ty1 = 1.0;
+                }
+                else
+                {
+                    MediaWindow.Screens[i].left = 0.0;
+                    MediaWindow.Screens[i].bottom = 0.0;
+                    MediaWindow.Screens[i].w = (double)MediaWindow.rx;
+                    MediaWindow.Screens[i].h = (double)MediaWindow.ry;
+
+                    MediaWindow.Screens[i].tx0 = 0.0;
+                    MediaWindow.Screens[i].tx1 = 1.0;
+                    MediaWindow.Screens[i].ty0 = 0.0;
+                    MediaWindow.Screens[i].ty1 = 1.0;
+                }
+            }
+        }
+
         private void DoZoom()
         {
+            if (ischoosingframe)
+            {
+                for (int i = 0; i < MediaWindow.screenCount; i++)
+                {
+                    MediaWindow.Screens[i].cframe = newFrame;
+                    MediaWindow.Screens[i].cframeSmooth = newFrame;
+                }
+                ResizeScreen(false);
+                ischoosingframe = false; //from DoColor method, get out of recreateSceneColor
+                Console.WriteLine("2: " + id + ", cframe: " + MediaWindow.Screens[0].cframe + ", " + MediaWindow.Screens[1].cframe + ", " + MediaWindow.Screens[2].cframe + ", ");
+            }
             if (iszooming)
             {
                 if (zoomcount >= zoomduration)
@@ -194,38 +238,31 @@ namespace testmediasmall
                     zoomcount = 0;
                     framecount = 0;
                     isfading = false;
-                    iscolor = false;
-                    //gazeRadius = 0.0;
-                    //ChangeMode();
-                    //Console.WriteLine(id + " stops zooming, cf = " + cframe);
+                    mode = Mode.color;
                     return;
                 }
                 if ((zoomcount >= zoomduration - fadeduration) && !isfading)
                 {
                     isfading = true;
-                    MediaWindow.Screens[next(id)].ison = true;
-                    //pframe = cframe;
-                    cframe = newFrame;
-                    cframeSmooth = newFrame;
-                    Console.WriteLine(id + " is fading, pf = " + pframe +", cf = " + cframe);
-                    iscolor = false;
-                    ischoosingframe = false; //from DoColor method, get out of recreateSceneColor
                     fadecount = 0;
                 }
                 zoomcount++;
                 if (isfading) { fadecount++; }
+                
+                Console.WriteLine("3: " + id + ", cframe: " + MediaWindow.Screens[0].cframe + ", " + MediaWindow.Screens[1].cframe + ", " + MediaWindow.Screens[2].cframe + ", ");
+                
             }
             else if (deviation < 20 && deviation > 0.00000000001 && framecount > transitionInterval) //avoid zooming when there's no gaze data (dev = 0)
             {
                 projF = projGM; //projected focus. unlike projG, projF remains stable during zooming process
-                MediaWindow.Screens[next(id)].ison = true;
                 iszooming = true;
                 zoomcount = 0;
                 pframe = cframe; ///Frame reassignments
-                
                 newFrame = MediaWindow.domiHueTransition(pframe, true);
                 //newFrame = MediaWindow.maskAvgRGBTransition(cframe, num,gazeColor, true);
-                Console.WriteLine(id + " cf = " + cframe + ", newframe = " + newFrame);
+                //Console.WriteLine(id + " cf = " + cframe + ", newframe = " + newFrame);
+                
+                Console.WriteLine("1: " + id + " newframe" + newFrame);
             }
             else
             {
@@ -239,8 +276,8 @@ namespace testmediasmall
                 {
                     ispanning = false;
                     framecount = 0;
-                    ChangeMode();
-                    Console.WriteLine(id + " stops panning");
+                    //ChangeMode();
+                    //Console.WriteLine(id + " stops panning");
                 }
                 else
                 {
@@ -256,7 +293,7 @@ namespace testmediasmall
                     pandir = -1;
                     pancount = 0;
                     //MediaWindow.Screens[prev(id)].cframe = cframe;
-                    Console.WriteLine(id + " is panning, cframe = " + cframe + " pandir = " + pandir);
+                    //Console.WriteLine(id + " is panning, cframe = " + cframe + " pandir = " + pandir);
                 }
                 else if (Vector3d.Dot(new Vector3d(1.0, 0.0, 0.0), gazeVector) > 0.0 && framecount > transitionInterval) //any condition that triggers motion mode, maybe gaze optical flow....
                 {
@@ -264,7 +301,7 @@ namespace testmediasmall
                     ispanning = true;
                     pandir = 1;
                     pancount = 0;
-                    Console.WriteLine(id + " is panning, cframe = " + cframe + " pandir = " + pandir);
+                    //Console.WriteLine(id + " is panning, cframe = " + cframe + " pandir = " + pandir);
                 }
             }
         }
@@ -308,7 +345,7 @@ namespace testmediasmall
                 }
                 issequencing = false;
                 framecount = 0;
-                ChangeMode();
+                //ChangeMode();
                 Console.Write("sequence end, cf = ");
                 for (int i = 0; i < MediaWindow.screenCount; i++)
                 {
@@ -410,22 +447,13 @@ namespace testmediasmall
         {
             if (iscolor)
             {
+                colorcount++;
                 //if (colorcount >= colorduration && threshold > 300)
-                if (colorcount >= colorduration)
+                if (colorcount >= colorduration || gazeRadius > MediaWindow.ry)
                 {
-                    for (int i = 0; i < MediaWindow.screenCount; i++)
-                    {
-                        MediaWindow.Screens[i].left = (double)i * (double)MediaWindow.rx / (double)MediaWindow.screenCount;
-                        MediaWindow.Screens[i].bottom = 0.0;
-                        MediaWindow.Screens[i].w = (double)MediaWindow.rx / (double)MediaWindow.screenCount;
-                        MediaWindow.Screens[i].h = (double)MediaWindow.ry;
-
-                        MediaWindow.Screens[i].tx0 = (double)i / (double)MediaWindow.screenCount;
-                        MediaWindow.Screens[i].tx1 = ((double)i + 1.0) / (double)MediaWindow.screenCount;
-                        MediaWindow.Screens[i].ty0 = 0.0;
-                        MediaWindow.Screens[i].ty1 = 1.0;
-                    }
-                    Console.WriteLine(id + "drawing enlarged" + "tx0, tx1, ty0, ty1: " + tx0 + ", " + tx1 + ", " + ty0 + ", " + ty1);
+                    ResizeScreen(true);
+                    Screen.sequenceDurationEnlarge = 1.0;
+                    //Console.WriteLine(id + "drawing enlarged" + "tx0, tx1, ty0, ty1: " + tx0 + ", " + tx1 + ", " + ty0 + ", " + ty1);
                     MediaWindow.Screens[0].cframe = MediaWindow.Screens[0].newFrame;
                     MediaWindow.Screens[0].cframeSmooth = MediaWindow.Screens[0].newFrame;
                     MediaWindow.Screens[2].cframe = MediaWindow.Screens[2].newFrame;
@@ -436,29 +464,23 @@ namespace testmediasmall
                     //Console.WriteLine("jumped " + id + " cf = " + cframe + ", msMode " + MediaWindow.multipleScreen);
                     gazeRadius = 0.0;
                     threshold = 0;
-                    iscolor = false;
-                    ischoosingframe = true;
-                    colorcount = 0;
-                    //Console.WriteLine("1: " + MediaWindow.multipleScreen + " colorcount: " + colorcount);
+                    DisableColor();
+                    ischoosingframe = true; 
+                    Console.WriteLine("-1: " + id + "ischoosingframe " + ischoosingframe);
                 }
                 // Gaze is not fixated
-                if (deviation > 40)
+                if (deviation > 20)
                 {
-                    iscolor = false;
-                    colorcount = 0;
                     gazeRadius = 0.0;
                     threshold = 0;
+                    DisableColor();
                     //Console.WriteLine("2: " + MediaWindow.multipleScreen + " colorcount: " + colorcount);
                     //Console.WriteLine(id + " deviation > 40, cf = " + cframe);
                     //return;
                 }
             }
-            else if (ischoosingframe)
-            {
-                DoZoom();
-            }
             // Gaze is considered fixated after staring at a point for 30 frames
-            else if (deviation > 0 && deviation < 40)
+            else if (deviation < 20 && deviation > 0.00000000001 && framecount > transitionInterval)
             {
                 //projF = projGM;
                 iscolor = true;
@@ -471,15 +493,35 @@ namespace testmediasmall
                 //newFrame = MediaWindow.domiHueTransition(cframe, true);
                 //Console.WriteLine(id + "gaze focused, newframe = " + newFrame + ", msMode while color: " + MediaWindow.multipleScreen);
             }
-            // First frame of video starts here
-            else
+            if (ischoosingframe)
             {
-                MediaWindow.multipleScreen = false;
-                //Console.WriteLine("0: " + MediaWindow.multipleScreen + " colorcount: " + colorcount);
+                choosingFcount++;
+                DisableColor();
+                if (choosingFcount > choosingFduration)
+                {
+                    mode = Mode.zoom;
+                    Console.WriteLine("0: " + id + " status of ischoosingframe: " + ischoosingframe);
+                }
             }
-            colorcount++;
             //pframe = cframe;
             //Console.WriteLine(id + " cf = " + cframe +", cc :" + colorcount + ", mcMode " + MediaWindow.multipleScreen);
+        }
+
+        void DisableColor() 
+        {
+            for (int i = 0; i < MediaWindow.screenCount; i++)
+            {
+                if (MediaWindow.Screens[i].iscolor) 
+                {
+                    MediaWindow.Screens[i].iscolor = false;
+                   MediaWindow.Screens[i].colorcount = 0;
+                }
+                else
+                {
+                    MediaWindow.Screens[i].iscolor = false;
+                    MediaWindow.Screens[i].colorcount = 0;
+                }
+            }
         }
 
         static double ColorDist(byte[] px, RGBA_Quad quad)
@@ -724,21 +766,23 @@ byte[, ,] recreate_pix_data = new byte[MediaWindow.ry, MediaWindow.rx, 3];
                 if (iscolor)    //in the beginning deviation = 0 so must have deviation > very small number
                 {
                     //...............................................end for using projF
+                    GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                     px = RecreateGazeColor(MediaWindow.Vframe_repository[cframe], threshold, true);
                     
                     //if (threshold <= 500)
                     //{
-                        threshold += 2 * (int) Math.Sqrt(colorcount);
+                        threshold += 3 * (int) Math.Sqrt(colorcount);
                     //}
-                    gazeRadius += 1.0 * colorcount* colorcount;
+                    gazeRadius += 1.5 * colorcount* colorcount;
                 }
                 else if (ischoosingframe)
                 {
-                    GL.ClearColor(0.0f, 0.6f, 0.6f, 1.0f);
+                    GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                     px = RecreateScreenColor(MediaWindow.Vframe_repository[cframe], threshold, true);
                 }
                 else 
-                { 
+                {
+                    GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                     px = MediaWindow.Vframe_repository[cframe].pix_data;
                     if (issequencing)
                     {

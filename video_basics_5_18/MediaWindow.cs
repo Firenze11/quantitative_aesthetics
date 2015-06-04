@@ -57,11 +57,11 @@ namespace testmediasmall
         //global control
         static bool checkVideo = false;
         static bool playbackmode = false;
-        public static bool multipleScreen = false;
+        public static bool multipleScreen = true;
         static int maxframes = 1500;
         static int minframes = 40;
 
-        static int skippedFrameRange = 10;
+        static int skippedFrameRange = 50;
         public static int screenCount = 3;
 
         //data
@@ -334,7 +334,7 @@ namespace testmediasmall
             dpoint = (lnorm + rnorm) * 0.5;
             dpoint.Y = (1.0 - dpoint.Y) * ry;
             dpoint.X = dpoint.X * rx;
-            if (!Laptop)
+            //if (!Laptop)
             {
                 dpoint = new Vector3d(this.MouseX / (double)Width * (double)rx, this.MouseY / (double)Height * (double)ry, 0.0);
             }

@@ -13,6 +13,7 @@ namespace testmediasmall
 {
     public class Screen
     {
+        //test
         //canvas property
         public int id;
         public double left, bottom, w, h, tx0, ty0, tx1, ty1;
